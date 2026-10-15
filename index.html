@@ -182,6 +182,14 @@ header#top{position:fixed;top:0;left:0;right:0;height:52px;display:flex;align-it
 .chips{display:flex;gap:5px;flex-wrap:wrap}
 .chip{border:1px solid var(--line);background:var(--bg);border-radius:12px;padding:2px 9px;font-size:12px;display:inline-flex;gap:5px;align-items:center}
 .chip i{width:8px;height:8px;border-radius:50%;display:inline-block}
+.wxweek{display:flex;gap:6px;align-items:stretch;margin-bottom:12px;overflow-x:auto;padding-bottom:2px}
+.wxnow{display:flex;align-items:center;gap:10px;border:1px solid var(--pan2);background:var(--pan);border-radius:8px;padding:8px 12px;flex:none}
+.wxnow>div{display:flex;flex-direction:column;line-height:1.2}.wxnow b{font-size:20px;color:var(--hi)}.wxnow span{font-size:12px;color:var(--ink)}.wxnow small{font-size:11px;color:var(--mute)}
+.wxday{flex:1;min-width:92px;display:flex;flex-direction:column;align-items:center;gap:3px;border:1px solid var(--pan2);background:var(--pan);border-radius:8px;padding:7px 6px}
+.wxday small{font-size:11px;color:var(--mute);display:inline-flex;align-items:center;gap:3px;white-space:nowrap}.wxday small.wet{color:#7dd3fc}
+.wxday b{font-size:15px;color:var(--hi)}.wxday b span{color:var(--mute);font-weight:500;font-size:12px;margin-left:4px}
+.wxday.today{border-color:#2563eb}.wxday.ech{border-color:#c04de0;background:var(--acc-l)}
+.ttwx{display:flex;align-items:center;gap:6px;margin:4px 0 2px}.ttwx b{font-size:14px;color:#fff}.ttwx span{font-size:11.5px;color:#cbd5e1}
 .met{display:inline-flex;flex-direction:column;align-items:center;border:1px solid var(--pan2);background:var(--bg);border-radius:6px;padding:5px 8px;margin:0 4px 4px 0;min-width:72px}
 .met span{font-size:20px}
 .dclist .kv b{color:#e9a8f7}
@@ -437,6 +445,7 @@ const IC={
  sigma:'<path d="M18 4H6l6 8-6 8h12"/>',
  circle:'<circle cx="12" cy="12" r="8"/>',
  half:'<circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 1 0 16z" fill="currentColor"/>',
+ wind:'<path d="M3 8h11a3 3 0 1 0-3-3M3 12h16a3 3 0 1 1-3 3M3 16h8"/>',
  sun:'<circle cx="12" cy="12" r="4.5"/><path d="M12 2v2M12 20v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M2 12h2M20 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4"/>',
  sunCloud:'<path d="M12 2v2M4.9 4.9l1.4 1.4M20 12h2M19.1 4.9l-1.4 1.4M15.9 13.1A4 4 0 1 0 8 11.5"/><path d="M13 22H7a5 5 0 1 1 4.9-6H13a3 3 0 0 1 0 6z"/>',
  cloud:'<path d="M17.5 19H8a6 6 0 1 1 5.7-8h1.8a4.5 4.5 0 1 1 2 8z"/>',
@@ -756,7 +765,8 @@ function refreshMarkers(){
   IDX.affaires.forEach(s=>{if(s.lat==null||s.lng==null||!visible(s))return;
     const m=L.marker([s.lat,s.lng],{icon:pinIcon(s)});
     const j=daysTo(s.echeance);
-    m.bindTooltip(`<b>${esc(s.nom)}</b><br>${esc(ETATS[s.etat]?.l||'')}${s.client?' — '+esc(s.client):''}${s.echeance?`<br>Échéance : ${fmtD(s.echeance)}${!s.repondu&&j!=null?` (${j<0?'dépassée':'J-'+j})`:''}`:''}<br><span style="color:#6b7280">${s.steps?.done||0}/${s.steps?.total||6} étapes — clic pour le rapport</span>`,{direction:'top'});
+    m.bindTooltip(`<b>${esc(s.nom)}</b><br>${esc(ETATS[s.etat]?.l||'')}${s.client?' — '+esc(s.client):''}${s.echeance?`<br>Échéance : ${fmtD(s.echeance)}${!s.repondu&&j!=null?` (${j<0?'dépassée':'J-'+j})`:''}`:''}<div class="ttw" data-w="${s.id}">${wxNowHTML(s)}</div><span style="color:#9ca3af">${s.steps?.done||0}/${s.steps?.total||6} étapes — clic pour le rapport</span>`,{direction:'top'});
+    m.on('tooltipopen',()=>wxNow(s).then(()=>{const t=m.getTooltip();if(t&&t.isOpen()){const el=t.getElement()?.querySelector('.ttw');if(el)el.innerHTML=wxNowHTML(s)}}));
     m.on('click',()=>{if(!MODE)openAffaire(s.id)});MARKERS.addLayer(m)});
 }
 function fitAll(){if(!MAP)return;const pts=IDX.affaires.filter(s=>s.lat!=null).map(s=>[s.lat,s.lng]);if(pts.length>1)MAP.fitBounds(pts,{padding:[50,50],maxZoom:15});else if(pts.length===1)MAP.setView(pts[0],14)}
@@ -954,6 +964,7 @@ function tabRapport(){
   const prixRet=a.prix.cats.map(c=>({l:c.l,n:c.rows.length,t:c.rows.filter(r=>r.st==='retenu').reduce((t,r)=>t+num(r.q)*num(r.pu),0)}));
   const typo=Object.entries({demolition:'Démolition',terrassement:'Terrassement',vrd:'VRD'}).filter(([k])=>d.typo[k]).map(([,v])=>v).join(' · ')||'—';
   return `<div class="tabhead"><div><h2>Rapport de suivi d'affaire</h2><p class="mute">${esc(d.adresse||'Adresse non renseignée')} — mise à jour ${fmtD(a.updated)}</p></div></div>
+  <div class="wxweek" id="wxweek"><span class="mute">Chargement de la météo de la semaine…</span></div>
   <div class="pipe">${pipe}</div>
   <div class="sgrid">
    <div class="card"><div class="cardh"><b>${ic('clock')} Échéance</b></div>
@@ -969,14 +980,27 @@ function tabRapport(){
    <div class="card"><div class="cardh"><b>${ic('square')} Métré</b></div><div class="kv"><span>Projet Mapulator</span><b>${a.metre.map?esc(a.metre.map.name):'Non lié'}</b></div><div class="kv"><span>Postes</span><b>${a.metre.rows.length}</b></div><div class="kv"><span>Total métré HT</span><b style="color:var(--acc)">${eur(metreTotal(a))}</b></div></div>
    <div class="card dclist"><div class="cardh"><b>${ic('form')} Dossier administratif</b></div>${['dc1','dc2','dc3'].map(k=>`<div class="kv"><span>${DCS[k].t} — ${esc(DCS[k].l.split(' — ')[0])}</span><b>${dcPctOf(a,k)} %</b></div>`).join('')}${a.dc.dc4.map((x,i)=>`<div class="kv"><span>DC4 — ${esc(x._st?.societe||'sous-traitant')}</span><b>${dcPctOf(a,'dc4',i)} %</b></div>`).join('')||'<div class="kv"><span>DC4</span><b class="mute">aucun</b></div>'}</div>
    <div class="card"><div class="cardh"><b>${ic('todo')} Tâches ouvertes</b><span class="sp"></span><button class="btn sm" data-act="tab" data-t="chrono">Chronologie</button></div>${todos.slice(0,10).map(t=>`<label class="todo"><input type="checkbox" data-act="todoChk" data-id="${t.e.id}" data-i="${t.i}"><span>${esc(t.it.t)}</span><small class="mute">· ${esc(t.e.titre)}</small></label>`).join('')||'<p class="mute">Aucune tâche ouverte.</p>'}</div>
-   <div class="card"><div class="cardh"><b>${ic('sunCloud')} Météo du chantier</b></div><div id="meteo" class="mute">Chargement…</div></div>
   </div>`;
 }
-const wmo=c=>ic(c===0?'sun':c<=2?'sunCloud':c===3?'cloud':c<=48?'fog':c<=67?'rain':c<=77?'snow':c<=82?'rain':c<=86?'snow':'storm',24);
-async function loadMeteo(a){const el=$('#meteo');if(!el)return;const d=a.deno;if(d.lat==null){el.textContent='Position du chantier non définie.';return}
-  try{const r=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${d.lat}&longitude=${d.lng}&daily=weathercode,temperature_2m_max,temperature_2m_min,precipitation_sum&timezone=auto&forecast_days=4`);const j=await r.json();const D=j.daily;
-    if($('#meteo'))$('#meteo').innerHTML=D.time.map((t,i)=>`<div class="met"><small>${new Date(t+'T12:00').toLocaleDateString('fr-FR',{weekday:'short',day:'numeric'})}</small><span>${wmo(D.weathercode[i])}</span><b>${Math.round(D.temperature_2m_min[i])}° / ${Math.round(D.temperature_2m_max[i])}°</b><small>${D.precipitation_sum[i]} mm</small></div>`).join('')}
-  catch(e){if($('#meteo'))$('#meteo').textContent='Météo indisponible.'}}
+/* ============ Météo (Open-Meteo, sans clé) ============ */
+const WX=c=>c===0?['sun','Ensoleillé','#fbbf24']:c<=2?['sunCloud','Éclaircies','#fcd34d']:c===3?['cloud','Couvert','#cbd5e1']:c<=48?['fog','Brouillard','#94a3b8']:c<=57?['rain','Bruine','#7dd3fc']:c<=67?['rain','Pluie','#38bdf8']:c<=77?['snow','Neige','#e0f2fe']:c<=82?['rain','Averses','#38bdf8']:c<=86?['snow','Averses de neige','#e0f2fe']:['storm','Orage','#c084fc'];
+const wxIcon=(c,s=20)=>{const w=WX(c);return `<span style="color:${w[2]};display:inline-flex" title="${w[1]}">${ic(w[0],s)}</span>`};
+const WXC=new Map();
+async function wxFetch(lat,lng,kind){
+  const k=kind+'|'+(+lat).toFixed(3)+'|'+(+lng).toFixed(3),c=WXC.get(k);if(c&&(Date.now()-c.t<15*60e3))return c.v;
+  const q=kind==='now'?'current=temperature_2m,weather_code,wind_speed_10m,precipitation':'daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,precipitation_probability_max,wind_speed_10m_max&current=temperature_2m,weather_code,wind_speed_10m&forecast_days=7';
+  const r=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&${q}&timezone=auto&wind_speed_unit=kmh`);if(!r.ok)throw new Error('météo');
+  const v=await r.json();WXC.set(k,{t:Date.now(),v});return v;
+}
+function wxNow(s){if(s.lat==null)return Promise.resolve();return wxFetch(s.lat,s.lng,'now').then(v=>{s._wx=v.current},()=>{s._wx='err'})}
+function wxNowHTML(s){const w=s._wx;if(!w)return '<span class="ttwx mute">Météo…</span>';if(w==='err')return '';
+  return `<span class="ttwx">${wxIcon(w.weather_code,22)}<b>${Math.round(w.temperature_2m)}°C</b><span>${WX(w.weather_code)[1]} · vent ${Math.round(w.wind_speed_10m)} km/h</span></span>`}
+async function loadMeteo(a){const el=$('#wxweek');if(!el)return;const d=a.deno;if(d.lat==null){el.innerHTML='<span class="mute">Météo : position du chantier non définie.</span>';return}
+  try{const v=await wxFetch(d.lat,d.lng,'week');const D=v.daily,C=v.current,box=$('#wxweek');if(!box)return;
+    const today=todayISO(),ech=(d.echeance||'').slice(0,10);
+    box.innerHTML=`<div class="wxnow">${wxIcon(C.weather_code,34)}<div><b>${Math.round(C.temperature_2m)}°C</b><span>${WX(C.weather_code)[1]}</span><small>vent ${Math.round(C.wind_speed_10m)} km/h</small></div><small class="mute">Maintenant<br>sur le chantier</small></div>`+
+    D.time.map((t,i)=>`<div class="wxday ${t===today?'today':''} ${t===ech?'ech':''}" title="${WX(D.weather_code[i])[1]}${t===ech?' — jour de l’échéance':''}"><small>${t===today?'Auj.':new Date(t+'T12:00').toLocaleDateString('fr-FR',{weekday:'short',day:'numeric'})}</small>${wxIcon(D.weather_code[i],26)}<b>${Math.round(D.temperature_2m_max[i])}°<span>${Math.round(D.temperature_2m_min[i])}°</span></b><small class="${D.precipitation_sum[i]>=5?'wet':''}">${ic('rain',11)} ${D.precipitation_sum[i]} mm${D.precipitation_probability_max?.[i]!=null?' · '+D.precipitation_probability_max[i]+'%':''}</small><small>${ic('wind',11)} ${Math.round(D.wind_speed_10m_max[i])} km/h</small></div>`).join('')}
+  catch(e){const b=$('#wxweek');if(b)b.innerHTML='<span class="mute">Météo indisponible (pas de connexion).</span>'}}
 
 /* --- Onglet Dénomination --- */
 const posTxt=d=>d.lat!=null?`Position : ${(+d.lat).toFixed(5)}, ${(+d.lng).toFixed(5)}`:'Position non définie';
@@ -1414,13 +1438,28 @@ function runSplash(){
     ['mousedown','keydown','touchstart','wheel'].forEach(ev=>window.addEventListener(ev,end,{once:true,capture:true,passive:true}))});
 }
 function svgToPNG(svg,size){return new Promise(res=>{const img=new Image();img.onload=()=>{const c=document.createElement('canvas');c.width=c.height=size;const g=c.getContext('2d');const r=Math.min(size/img.width,size/img.height);const w=img.width*r,h=img.height*r;g.drawImage(img,(size-w)/2,(size-h)/2,w,h);res(c.toDataURL('image/png'))};img.onerror=()=>res(null);img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg)})}
-async function setupIcons(){
-  const fav=await svgToPNG(logoSVG(false),64),i192=await svgToPNG(logoSVG(true),192),i512=await svgToPNG(logoSVG(true),512),i180=await svgToPNG(logoSVG(true),180);
-  const add=(rel,href,extra={})=>{if(!href)return;const l=document.createElement('link');l.rel=rel;l.href=href;Object.assign(l,extra);document.head.append(l)};
-  add('icon',fav,{type:'image/png'});add('apple-touch-icon',i180);
-  const man={name:'MOMOwork - Suivis de chantier',short_name:'MOMOwork',description:'Suivis de chantier',start_url:location.href.split('#')[0],scope:location.href.split('#')[0].replace(/[^/]*$/,''),display:'standalone',background_color:'#1f2937',theme_color:'#1f2937',icons:[{src:i192,sizes:'192x192',type:'image/png'},{src:i512,sizes:'512x512',type:'image/png',purpose:'any'}]};
+/* Icônes d'appli dessinées de façon synchrone (canvas + Path2D) : le manifeste est en place dès le chargement */
+function makeIcon(size,{bg=true,pad=.1}={}){
+  const c=document.createElement('canvas');c.width=c.height=size;const g=c.getContext('2d');
+  if(bg){const r=size*.2;g.beginPath();g.moveTo(r,0);g.arcTo(size,0,size,size,r);g.arcTo(size,size,0,size,r);g.arcTo(0,size,0,0,r);g.arcTo(0,0,size,0,r);g.closePath();g.fillStyle='#fff';g.fill()}
+  const W=1280,H=1240,inner=size*(1-2*pad),k=Math.min(inner/W,inner/H);
+  g.save();g.translate((size-W*k)/2,(size-H*k)/2);g.scale(k,k);
+  const M=new Path2D(MPATH);g.fillStyle='#808080';
+  g.save();g.translate(7,8);g.fill(M);g.restore();g.save();g.translate(7,385);g.fill(M);g.restore();
+  g.fillStyle='#9D00C2';g.fill(new Path2D(WORKD),'evenodd');g.restore();
+  return c.toDataURL('image/png');
+}
+function setupIcons(){
+  let i192,i512,m512,fav;
+  try{i192=makeIcon(192);i512=makeIcon(512);m512=makeIcon(512,{pad:.2});fav=makeIcon(64,{bg:false,pad:.02})}catch(e){console.error(e);return}
+  const add=(rel,href,extra={})=>{const l=document.createElement('link');l.rel=rel;l.href=href;Object.assign(l,extra);document.head.append(l)};
+  add('icon',fav,{type:'image/png'});add('apple-touch-icon',i192);
+  const page=location.href.split('#')[0].split('?')[0];
+  const man={id:'momowork-suivis-de-chantier',name:'MOMOwork - Suivis de chantier',short_name:'MOMOwork',description:'Suivis de chantier',lang:'fr',start_url:page,scope:page.substring(0,page.lastIndexOf('/')+1),display:'standalone',background_color:'#1f2937',theme_color:'#1f2937',
+    icons:[{src:i192,sizes:'192x192',type:'image/png',purpose:'any'},{src:i512,sizes:'512x512',type:'image/png',purpose:'any'},{src:m512,sizes:'512x512',type:'image/png',purpose:'maskable'}]};
   add('manifest','data:application/manifest+json,'+encodeURIComponent(JSON.stringify(man)));
 }
+setupIcons();
 
 /* ============ Clavier & fermeture ============ */
 document.addEventListener('keydown',e=>{
@@ -1441,7 +1480,7 @@ async function boot(){
   try{IDX=IDB.db?await Store.loadIndex():null}catch(e){IDX=null}
   if(!IDX)IDX=newIndex();normIdx();
   try{initMap()}catch(e){console.error(e);$('#map').innerHTML='<p style="padding:20px" class="mute">Carte indisponible (pas de connexion au serveur de cartes).</p>'}
-  renderAll();startAuto();setupIcons();
+  renderAll();startAuto();
   if(MAP&&!IDX.settings.center)fitAll();
   splashDone.then(()=>{$('#splash').classList.add('out');setTimeout(()=>$('#splash').remove(),450);
     if(Store.mode==='folder'&&!Store.granted)toast(`Cliquez sur une affaire ou sur Sauvegarde › Reconnecter pour rouvrir le dossier « ${Store.dir.name} »`);
