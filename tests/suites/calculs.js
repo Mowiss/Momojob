@@ -8,7 +8,7 @@ module.exports = { name: 'calculs', run: async (H, t) => {
         shapes = []; const m = mmToWorld(1000), TN = ensureLayer('Terrain naturel', '#bef264');
         for (let i = 0; i <= 12; i++) for (let j = 0; j <= 10; j++) shapes.push({ type: 'point', layerId: TN, x: i * 5 * m, y: -j * 5 * m, z: 100000, zk: 1 });
         const pl = { type: 'poly', layerId: 'layer-0', zk: 1, points: [[20, 15], [40, 15], [40, 25], [20, 25]].map(([x, y]) => ({ x: x * m, y: -y * m, z: o.z })) };
-        if (o.talus) pl.talus = o.talus; if (o.rp) pl.cubRP = o.rp; shapes.push(pl); invalidateCache(); saveState();
+        if (o.talus) pl.talus = o.talus; if (o.rp) pl.cubRP = o.rp; if (o.struct) pl.struct = o.struct; shapes.push(pl); invalidateCache(); saveState();
         const C = withModel(() => cubCompute()); if (C.err) return { err: C.err };
         const it = C.items[0];
         return { D: +C.D.toFixed(3), Rm: +C.Rm.toFixed(3), RP: +(C.RP || 0).toFixed(3), plat: [+it.pr.deb.toFixed(3), +it.pr.rem.toFixed(3)], tal: it.tal ? [+it.tal.deb.toFixed(3), +it.tal.rem.toFixed(3)] : null,
@@ -59,6 +59,20 @@ module.exports = { name: 'calculs', run: async (H, t) => {
       t.ok('vue iso du plan : maillage du terrain présent autour de la plateforme', wire > 20, wire);
       t.ok('3D : cotes de niveau masquées → points et fils masqués aussi', rp3.pts[0] > 0 && rp3.pts[1] === 0, JSON.stringify(rp3.pts));
       t.ok('3D : remblai périphérique affiché, dessus à 99,50', rp3.n === 1 && Math.abs(rp3.top - 99.5) < 0.01, JSON.stringify(rp3));
+
+    // 7. remblai périphérique AU TERRAIN NATUREL : la fouille est rebouchée jusqu'au terrain = volume du talus de déblai (1 m, 1/1) = 60 × 0,5 + 4/3 = 31,33 m³
+    r = await cub({ z: 99000, talus: { on: true, kD: '1/1', kR: '3/2' }, rp: { on: true, mode: 'tn' } });
+    t.ok('remblai périphérique jusqu\'au terrain naturel = 31,33 m³ (à 2 % près)', pct(r.RP, 31.333) < 0.02, JSON.stringify(r));
+    // 8. cote finie AU-DESSUS du terrain (100,50 pour un terrain à 100) : fouille remplie jusqu'à 100,50 puis talus 1/1 jusqu'au terrain
+    //    fouille : 31,33 + 0,5 × (60 + π) = 62,90 ; talus : 0,125 × (60 + 2π) + 2π × 0,5³ / 6 = 8,42 ; total 71,3 m³
+    r = await cub({ z: 99000, talus: { on: true, kD: '1/1', kR: '3/2' }, rp: { on: true, z: 100500 } });
+    { const ext = (r.extra || []).find(e => /talus/.test(e[0] + '') && e[0].startsWith('remblai')); 
+      t.ok('cote finie au-dessus du terrain : talus 1/1 du remblai jusqu\'au terrain, total ≈ 71,3 m³ (à 3 % près)', pct(r.RP, 71.32) < 0.03, JSON.stringify(r)); }
+
+    // 9. structure de 40 cm et recul de 1 m : la structure s'étend sur le recul → recul terrassé au fond de forme : 64 m² × (1 + 0,4) = 89,6 m³
+    r = await cub({ z: 99000, talus: { on: true, kD: '1/1', kR: '3/2', R: 1000 }, struct: { layers: [{ mat: 'GNT_0_80', e: 40 }], ff: true } });
+    { const rec = (r.extra || []).find(e => e[0].startsWith('recul'));
+      t.ok('structure étendue au recul : recul terrassé au fond de forme (89,6 m³)', rec && Math.abs(rec[1] - 89.6) < 1.2, JSON.stringify(rec)); }
 
     // métré : longueur d'une droite et d'une polyligne, surface d'un rectangle
     await ev(() => { shapes = []; const m = mmToWorld(1000);
