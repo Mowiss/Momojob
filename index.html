@@ -4,11 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#1f2937">
-<title>MOMOwork - Suivis de chantier</title>
+<title>MomoJOB - Suivis de chantier</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <style>
-:root{--bg:#111827;--pan:#1f2937;--pan2:#374151;--card:#1f2937;--field:#374151;--line:#4b5563;--line2:#374151;--ink:#e5e7eb;--hi:#fff;--mute:#9ca3af;--grey:#8a8a8a;--acc:#9D00C2;--acc2:#c04de0;--acc-l:#3b1147;--ok:#34d399;--okbg:#064e3b;--warn:#fbbf24;--warnbg:#422006;--err:#f87171;--errbg:#450a0a;--blue:#3b82f6;--teal:#2dd4bf;--tealbg:#134e4a;--sky:#38bdf8;--skybg:#0c4a6e}
+:root{--bg:#111827;--pan:#1f2937;--pan2:#374151;--card:#1f2937;--field:#374151;--line:#4b5563;--line2:#374151;--ink:#e5e7eb;--hi:#fff;--mute:#9ca3af;--grey:#8a8a8a;--acc:#934484;--acc2:#b565a7;--acc-l:#3a1a35;--ok:#34d399;--okbg:#064e3b;--warn:#fbbf24;--warnbg:#422006;--err:#f87171;--errbg:#450a0a;--blue:#3b82f6;--teal:#2dd4bf;--tealbg:#134e4a;--sky:#38bdf8;--skybg:#0c4a6e}
 *{box-sizing:border-box;box-shadow:none!important;text-shadow:none!important}
 html,body{margin:0;height:100%;font:13px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--ink);background:var(--bg);color-scheme:dark}
 a{color:#93c5fd}
@@ -75,9 +75,9 @@ header#top{position:fixed;top:0;left:0;right:0;height:52px;display:flex;align-it
 .leaflet-container{font:inherit;background:#0b1220}
 .leaflet-tooltip{background:var(--pan);color:var(--ink);border:1px solid var(--line);border-radius:6px}
 .leaflet-tooltip-top:before{border-top-color:var(--line)}
-.mlabel{background:#1f2937!important;border:1px solid #c04de0!important;color:#f5d0fe!important;font-weight:700;font-size:12px;padding:2px 7px!important;white-space:nowrap}.mlabel:before{display:none}
-.mseglab{background:rgba(17,24,39,.85)!important;border:0!important;color:#e9a8f7!important;font-size:10.5px;font-weight:600;padding:1px 5px!important}.mseglab:before{display:none}
-.mlive{background:#c04de0!important;border:0!important;color:#fff!important;font-weight:700;font-size:12px;padding:3px 8px!important;white-space:nowrap}.mlive:before{display:none}
+.mlabel{background:#1f2937!important;border:1px solid #b565a7!important;color:#f3d4ec!important;font-weight:700;font-size:12px;padding:2px 7px!important;white-space:nowrap}.mlabel:before{display:none}
+.mseglab{background:rgba(17,24,39,.85)!important;border:0!important;color:#e7b5dc!important;font-size:10.5px;font-weight:600;padding:1px 5px!important}.mseglab:before{display:none}
+.mlive{background:#b565a7!important;border:0!important;color:#fff!important;font-weight:700;font-size:12px;padding:3px 8px!important;white-space:nowrap}.mlive:before{display:none}
 .leaflet-control-attribution{background:rgba(31,41,55,.8)!important;color:var(--mute)!important}.leaflet-control-attribution a{color:#93c5fd!important}
 
 /* Drawer */
@@ -113,7 +113,7 @@ header#top{position:fixed;top:0;left:0;right:0;height:52px;display:flex;align-it
 .agenda h2{color:var(--hi)}
 .agi{display:flex;align-items:center;gap:10px;border:1px solid var(--pan2);border-radius:6px;padding:9px 12px;margin-bottom:6px;cursor:pointer;background:var(--pan)}
 .agi:hover{background:var(--pan2)} .agi.late{border-color:#7f1d1d;background:#2a1215}
-.agline{display:flex;align-items:center;gap:8px;margin:14px 0;color:#e9a8f7;font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:.6px}
+.agline{display:flex;align-items:center;gap:8px;margin:14px 0;color:#e7b5dc;font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:.6px}
 .agline:before,.agline:after{content:"";flex:1;height:2px;background:var(--acc2)}
 
 /* Rapport */
@@ -160,7 +160,7 @@ header#top{position:fixed;top:0;left:0;right:0;height:52px;display:flex;align-it
 .seg button{border:0;background:transparent;padding:5px 12px;cursor:pointer;border-radius:6px;color:#d1d5db;font-weight:600}
 .seg button:hover{background:var(--pan2)}
 .seg button.on.oui{background:#059669;color:#fff} .seg button.on.non{background:var(--line);color:#fff} .seg button.on.nc{background:#b45309;color:#fff}
-.totbar{text-align:right;font-size:14px;margin:6px 0 0} .totbar b{color:#e9a8f7;font-size:16px}
+.totbar{text-align:right;font-size:14px;margin:6px 0 0} .totbar b{color:#e7b5dc;font-size:16px}
 .rte{border:1px solid var(--line);border-radius:6px;overflow:hidden;background:var(--field)}
 .rtebar{display:flex;gap:2px;padding:3px;border-bottom:1px solid var(--line);background:var(--pan)}
 .rtebar button{border:1px solid transparent;background:transparent;border-radius:4px;padding:2px 8px;cursor:pointer;color:var(--ink)}
@@ -188,20 +188,20 @@ header#top{position:fixed;top:0;left:0;right:0;height:52px;display:flex;align-it
 .wxday{flex:1;min-width:92px;display:flex;flex-direction:column;align-items:center;gap:3px;border:1px solid var(--pan2);background:var(--pan);border-radius:8px;padding:7px 6px}
 .wxday small{font-size:11px;color:var(--mute);display:inline-flex;align-items:center;gap:3px;white-space:nowrap}.wxday small.wet{color:#7dd3fc}
 .wxday b{font-size:15px;color:var(--hi)}.wxday b span{color:var(--mute);font-weight:500;font-size:12px;margin-left:4px}
-.wxday.today{border-color:#2563eb}.wxday.ech{border-color:#c04de0;background:var(--acc-l)}
+.wxday.today{border-color:#2563eb}.wxday.ech{border-color:#b565a7;background:var(--acc-l)}
 .ttwx{display:flex;align-items:center;gap:6px;margin:4px 0 2px}.ttwx b{font-size:14px;color:#fff}.ttwx span{font-size:11.5px;color:#cbd5e1}
 .met{display:inline-flex;flex-direction:column;align-items:center;border:1px solid var(--pan2);background:var(--bg);border-radius:6px;padding:5px 8px;margin:0 4px 4px 0;min-width:72px}
 .met span{font-size:20px}
-.dclist .kv b{color:#e9a8f7}
+.dclist .kv b{color:#e7b5dc}
 /* Documents */
 #drop{border:2px dashed var(--line);border-radius:8px;padding:16px;text-align:center;color:var(--mute);margin-top:10px}
-#drop.over{border-color:var(--acc2);background:var(--acc-l);color:#e9a8f7}
+#drop.over{border-color:var(--acc2);background:var(--acc-l);color:#e7b5dc}
 .fname{font-size:12px;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:inline-block;vertical-align:middle}
 /* Chrono */
 .tl{position:relative;display:flex;gap:26px;overflow-x:auto;padding:10px 10px 6px;min-height:150px;align-items:center}
 .tlline{position:absolute;left:0;right:0;top:50%;height:3px;background:var(--line)}
 .tln{position:relative;flex:none;display:flex;flex-direction:column;align-items:center;gap:6px;border:0;background:transparent;cursor:pointer;width:96px;color:var(--ink)}
-.tli{width:42px;height:42px;border-radius:50%;background:var(--pan2);border:2px solid var(--acc2);color:#e9a8f7;display:flex;align-items:center;justify-content:center;font-size:19px}
+.tli{width:42px;height:42px;border-radius:50%;background:var(--pan2);border:2px solid var(--acc2);color:#e7b5dc;display:flex;align-items:center;justify-content:center;font-size:19px}
 .tln:hover .tli{background:var(--acc-l)}
 .tln.plus .tli{background:var(--acc);color:#fff;font-size:22px;width:50px;height:50px}
 .tlt{font-size:11.5px;font-weight:600;text-align:center;max-width:96px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;height:16px}
@@ -218,7 +218,7 @@ header#top{position:fixed;top:0;left:0;right:0;height:52px;display:flex;align-it
 .dcst{background:var(--bg);padding:7px 10px;font-weight:700;border-bottom:1px solid var(--pan2);color:var(--hi)}
 .dcst span{display:inline-block;background:var(--acc);color:#fff;border-radius:4px;padding:0 7px;margin-right:6px}
 .dcsec .fgrid{padding:10px}
-.calc{padding:6px 8px;background:var(--bg);border:1px solid var(--pan2);border-radius:6px;font-weight:700;color:#e9a8f7}
+.calc{padding:6px 8px;background:var(--bg);border:1px solid var(--pan2);border-radius:6px;font-weight:700;color:#e7b5dc}
 .note{font-size:12px;color:var(--mute);font-style:italic}
 .warncard{border-color:#78350f!important;background:#1c1406!important;color:#fcd34d}
 /* Métré / Mapulator intégré */
@@ -254,7 +254,7 @@ header#top{position:fixed;top:0;left:0;right:0;height:52px;display:flex;align-it
 .mb{padding:14px;overflow:auto} .mb p{margin:0 0 8px}
 .mf{display:flex;justify-content:flex-end;gap:6px;padding:10px 14px;border-top:1px solid var(--pan2)}
 .guide h3{margin:16px 0 6px;color:#93c5fd;font-size:13px;text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--pan2);padding-bottom:4px} .guide p,.guide li{color:#d1d5db;line-height:1.5}
-.guide code{background:var(--bg);padding:1px 5px;border-radius:4px;color:#e9a8f7}
+.guide code{background:var(--bg);padding:1px 5px;border-radius:4px;color:#e7b5dc}
 #toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);z-index:4000;display:flex;flex-direction:column;gap:6px;align-items:center;pointer-events:none}
 .toast{background:var(--pan2);border:1px solid var(--line);color:#fff;padding:8px 14px;border-radius:6px;font-size:13px}
 .toast.err{background:#7f1d1d;border-color:#b91c1c} .toast.ok{background:#065f46;border-color:#059669}
@@ -280,7 +280,7 @@ header#top{position:fixed;top:0;left:0;right:0;height:52px;display:flex;align-it
   #print{display:block!important;color:#000;font-size:11px}
 }
 .pdoc{color:#000;background:#fff}
-.pdoc h1{font-size:17px;margin:0} .pdoc h2{font-size:13px;margin:14px 0 5px;color:#9D00C2;border-bottom:1.5px solid #9D00C2;padding-bottom:2px}
+.pdoc h1{font-size:17px;margin:0} .pdoc h2{font-size:13px;margin:14px 0 5px;color:#934484;border-bottom:1.5px solid #934484;padding-bottom:2px}
 .pdoc table{width:100%;border-collapse:collapse;margin:4px 0} .pdoc td,.pdoc th{border:1px solid #bbb;padding:3px 5px;text-align:left;vertical-align:top} .pdoc th{background:#f1f1f1}
 .pdoc .phead{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid #000;padding-bottom:6px;margin-bottom:8px}
 .pdoc .phead svg{height:22px;width:auto;display:block;margin-bottom:4px}
@@ -307,7 +307,7 @@ header#top{position:fixed;top:0;left:0;right:0;height:52px;display:flex;align-it
 </div>
 
 <header id="top">
-  <h1 id="app-logo" title="MOMOwork — suivi &amp; étude de chantier"></h1>
+  <h1 id="app-logo" title="MomoJOB — suivi &amp; étude de chantier"></h1>
   <span class="sp"></span>
   <span id="saveState"></span>
   <button class="hbtn green" id="btnInstall" title="Installer l'application"><svg class="ico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5M12 15V3"/></svg> Installer</button>
@@ -535,14 +535,15 @@ const IDB={db:null,
 
 /* ============ Stockage : dossier .mmw (File System Access) ou navigateur ============ */
 const FSA='showDirectoryPicker' in window;
-const INDEX_FILE='MOMOwork.mmw';
+const INDEX_FILE='MomoJOB.mmw',LEGACY_INDEX='MOMOwork.mmw';
+async function findIndex(dir){for(const n of [INDEX_FILE,LEGACY_INDEX]){try{await dir.getFileHandle(n);return n}catch(e){}}return null}
 const Store={mode:'local',dir:null,granted:false,
   async init(){let h=null;try{h=await IDB.get('kv','dir')}catch(e){}if(h&&FSA){this.dir=h;this.mode='folder';try{this.granted=(await h.queryPermission({mode:'readwrite'}))==='granted'}catch(e){this.granted=false}}},
   async ensure(){if(this.mode!=='folder'||this.granted)return true;try{this.granted=(await this.dir.requestPermission({mode:'readwrite'}))==='granted'}catch(e){}if(this.granted)await reloadFromFolder();else toast('Accès au dossier de sauvegarde refusé','err');updSaveUI();return this.granted},
   async readFile(dir,name){const f=await(await dir.getFileHandle(name)).getFile();return JSON.parse(await f.text())},
   async writeFile(dir,name,obj){const fh=await dir.getFileHandle(name,{create:true});const w=await fh.createWritable();await w.write(JSON.stringify(obj));await w.close()},
   affDir(){return this.dir.getDirectoryHandle('affaires',{create:true})},
-  async loadIndex(){if(this.mode==='folder'&&this.granted){try{return await this.readFile(this.dir,INDEX_FILE)}catch(e){}}return await IDB.get('kv','index')},
+  async loadIndex(){if(this.mode==='folder'&&this.granted){const n=await findIndex(this.dir);if(n){try{return await this.readFile(this.dir,n)}catch(e){}}}return await IDB.get('kv','index')},
   async saveIndex(idx){await IDB.set('kv','index',idx);if(this.mode==='folder'){if(!this.granted)throw new Error('dossier non autorisé');await this.writeFile(this.dir,INDEX_FILE,idx)}},
   async loadAff(id){if(this.mode==='folder'){if(!await this.ensure())return null;return await this.readFile(await this.affDir(),id+'.mmw')}return await IDB.get('aff',id)},
   async saveAff(id,data){if(this.mode==='folder'){if(!this.granted)throw new Error('dossier non autorisé');await this.writeFile(await this.affDir(),id+'.mmw',data)}else await IDB.set('aff',id,data)},
@@ -593,11 +594,11 @@ async function buildBundle(){
 async function manualSave(){
   if(Store.mode==='folder'&&!await Store.ensure())return;
   await saveAll(false);
-  const b=await buildBundle();const name=`MOMOwork_save-manuelle_${stamp()}.mmw`;
+  const b=await buildBundle();const name=`MomoJOB_save-manuelle_${stamp()}.mmw`;
   const where=await Store.writeManual(name,b);
   toast(where==='folder'?`Sauvegarde manuelle créée : ${name}`:`Fichier téléchargé : ${name}`,'ok');
 }
-async function exportAll(){if(Store.mode==='folder'&&!await Store.ensure())return;const b=await buildBundle();download(`MOMOwork_export_${stamp()}.mmw`,JSON.stringify(b));}
+async function exportAll(){if(Store.mode==='folder'&&!await Store.ensure())return;const b=await buildBundle();download(`MomoJOB_export_${stamp()}.mmw`,JSON.stringify(b));}
 async function newSave(){
   if(!FSA){toast('Chrome ou Edge requis pour choisir un dossier de sauvegarde','err');return}
   if(Store.mode==='folder'&&Store.granted)return;
@@ -605,9 +606,9 @@ async function newSave(){
   await attachFolder(dir);
 }
 async function attachFolder(dir){
-  let exists=false;try{await dir.getFileHandle(INDEX_FILE);exists=true}catch(e){}
+  let exists=!!(await findIndex(dir));
   if(exists){
-    const r=await modal({title:'Sauvegarde existante',body:`<p>Le dossier « ${esc(dir.name)} » contient déjà une sauvegarde MOMOwork.</p>`,buttons:[{l:'Annuler',v:0},{l:'Remplacer par mes données',v:2,cls:'danger'},{l:'Ouvrir cette sauvegarde',v:1,cls:'pri'}]});
+    const r=await modal({title:'Sauvegarde existante',body:`<p>Le dossier « ${esc(dir.name)} » contient déjà une sauvegarde MomoJOB.</p>`,buttons:[{l:'Annuler',v:0},{l:'Remplacer par mes données',v:2,cls:'danger'},{l:'Ouvrir cette sauvegarde',v:1,cls:'pri'}]});
     if(!r)return;if(r===1)return openFolder(dir);
   }
   const prevMode=Store.mode,prevGranted=Store.granted,datas={};
@@ -624,19 +625,19 @@ async function attachFolder(dir){
 async function openFolderPick(){
   if(!FSA){toast('Chrome ou Edge requis','err');return}
   let dir;try{dir=await showDirectoryPicker({id:'momowork',mode:'readwrite'})}catch(e){return}
-  let exists=false;try{await dir.getFileHandle(INDEX_FILE);exists=true}catch(e){}
-  if(!exists){if(await appConfirm(`Aucune sauvegarde MOMOwork dans « ${esc(dir.name)} ». Y créer une nouvelle sauvegarde avec les données actuelles ?`,'Créer ici','pri'))await attachFolder(dir);return}
+  let exists=!!(await findIndex(dir));
+  if(!exists){if(await appConfirm(`Aucune sauvegarde MomoJOB dans « ${esc(dir.name)} ». Y créer une nouvelle sauvegarde avec les données actuelles ?`,'Créer ici','pri'))await attachFolder(dir);return}
   await openFolder(dir);
 }
 async function openFolder(dir){
   if(isDirty()&&!await appConfirm('Des modifications ne sont pas enregistrées et seront perdues. Continuer ?','Continuer'))return;
-  try{const idx=await Store.readFile(dir,INDEX_FILE);Store.dir=dir;Store.mode='folder';Store.granted=true;await IDB.set('kv','dir',dir);
+  try{const idx=await Store.readFile(dir,(await findIndex(dir))||INDEX_FILE);Store.dir=dir;Store.mode='folder';Store.granted=true;await IDB.set('kv','dir',dir);
     IDX=idx;normIdx();CACHE.clear();DIRTY.clear();IDXDIRTY=false;await IDB.set('kv','index',IDX);LASTSAVE=new Date();closeRapport(true);renderAll();fitAll();toast(`Sauvegarde « ${dir.name} » ouverte`,'ok')}
   catch(e){toast('Lecture impossible : '+e.message,'err')}
   updSaveUI();
 }
 async function reloadFromFolder(){
-  try{const idx=await Store.readFile(Store.dir,INDEX_FILE);if(!IDXDIRTY){IDX=idx;normIdx();await IDB.set('kv','index',IDX);renderAll()}}catch(e){}
+  try{const idx=await Store.readFile(Store.dir,(await findIndex(Store.dir))||INDEX_FILE);if(!IDXDIRTY){IDX=idx;normIdx();await IDB.set('kv','index',IDX);renderAll()}}catch(e){}
 }
 async function importMMW(){
   const [f]=await pickFile('.mmw,.mtf,.MTF,.json');if(!f)return;
@@ -653,7 +654,7 @@ async function importMMW(){
     const a=normAff(o);if(IDX.affaires.some(s=>s.id===a.id))a.id=uid('AF-');
     CACHE.set(a.id,a);DIRTY.add(a.id);syncEntry(a);markIdx();toast('Affaire importée : '+a.deno.nom,'ok');openAffaire(a.id);
   }else if(o.app==='MOMOwork'){toast("Ce fichier est un index seul : ouvrez plutôt son dossier (Sauvegarde › Ouvrir) ou chargez une sauvegarde manuelle.",'err')}
-  else toast("Ce fichier n'est pas une sauvegarde MOMOwork",'err');
+  else toast("Ce fichier n'est pas une sauvegarde MomoJOB",'err');
 }
 /* ---- Compatibilité MOMOtion Flow (.MTF) ---- */
 const MTF_ETAT={"Appel d'offre":'ao','Location':'location','En étude':'etude','En travaux':'travaux','Terminé':'termine','Sans suite':'sanssuite'};
@@ -682,7 +683,7 @@ async function importMTF(o,fname){
   const byMtf=new Map(IDX.affaires.filter(s=>s.mtf).map(s=>[s.mtf,s.id]));
   const nNew=list.filter(x=>!byMtf.has(x.id)).length,nUpd=list.length-nNew;
   const nCt=(C.clients||[]).length+(C.sous_traitants||[]).length;
-  if(!await appConfirm(`<b>${esc(fname)}</b> — sauvegarde MOMOtion Flow.<br><br>• ${nNew} nouvelle(s) affaire(s) à ajouter<br>• ${nUpd} affaire(s) déjà importée(s) à mettre à jour (les étapes, métré et DC de MOMOwork sont conservés)<br>• ${nCt} contact(s) à fusionner dans le carnet<br><br>Les affaires actuelles de MOMOwork ne sont pas supprimées.`,'Importer','pri'))return;
+  if(!await appConfirm(`<b>${esc(fname)}</b> — sauvegarde MOMOtion Flow.<br><br>• ${nNew} nouvelle(s) affaire(s) à ajouter<br>• ${nUpd} affaire(s) déjà importée(s) à mettre à jour (les étapes, métré et DC de MomoJOB sont conservés)<br>• ${nCt} contact(s) à fusionner dans le carnet<br><br>Les affaires actuelles de MomoJOB ne sont pas supprimées.`,'Importer','pri'))return;
   if(Store.mode==='folder'&&!await Store.ensure())return;
   let n=0;
   for(const x of list){
@@ -719,7 +720,7 @@ function renderSaveMenu(){
   <button class="mi" data-sm="now">${ic('save',16)} Enregistrer maintenant <span class="sp"></span><span class="mute">Ctrl+S</span></button>
   <button class="mi" data-sm="manual">${ic('download',16)} Sauvegarde manuelle<small>${set?'Crée un .mmw daté à côté de la sauvegarde auto':'Télécharge un .mmw complet daté'}</small></button>
   <hr>
-  <button class="mi" data-sm="import">${ic('upload',16)} Charger un fichier…<small>.mmw MOMOwork, ou .MTF / .json de MOMOtion Flow (ajout et mise à jour des affaires)</small></button>
+  <button class="mi" data-sm="import">${ic('upload',16)} Charger un fichier…<small>.mmw MomoJOB, ou .MTF / .json de MOMOtion Flow (ajout et mise à jour des affaires)</small></button>
   <button class="mi" data-sm="export">${ic('send',16)} Exporter tout (.mmw)</button>`;
 }
 $('#saveMenu').addEventListener('click',async e=>{const b=e.target.closest('[data-sm]');if(!b||b.disabled||b.classList.contains('dis'))return;const k=b.dataset.sm;closeMenu();
@@ -794,9 +795,9 @@ function finishDraw(){
 function measLabel(type,pts){return type==='area'?`${Math.round(geoArea(pts)).toLocaleString('fr-FR')} m² · périmètre ${fmtLen(lenOf(pts,true))}`:fmtLen(lenOf(pts))}
 function drawTemp(cur){
   TEMP.clearLayers();if(!DRAW||!DRAW.pts.length)return;
-  const pts=cur?[...DRAW.pts,[cur.lat,cur.lng]]:DRAW.pts,s={color:'#c04de0',weight:2.5,dashArray:'6 5',interactive:false,fillOpacity:.12};
+  const pts=cur?[...DRAW.pts,[cur.lat,cur.lng]]:DRAW.pts,s={color:'#b565a7',weight:2.5,dashArray:'6 5',interactive:false,fillOpacity:.12};
   if(DRAW.type==='area'&&pts.length>2)L.polygon(pts,s).addTo(TEMP);else L.polyline(pts,s).addTo(TEMP);
-  DRAW.pts.forEach(p=>L.circleMarker(p,{radius:4,color:'#fff',weight:2,fillColor:'#c04de0',fillOpacity:1,interactive:false}).addTo(TEMP));
+  DRAW.pts.forEach(p=>L.circleMarker(p,{radius:4,color:'#fff',weight:2,fillColor:'#b565a7',fillOpacity:1,interactive:false}).addTo(TEMP));
   if(pts.length>=2){const last=pts[pts.length-1],seg=MAP.distance(pts[pts.length-2],last);
     const txt=DRAW.type==='area'&&pts.length>2?measLabel('area',pts):fmtLen(lenOf(pts))+(pts.length>2?` (segment ${fmtLen(seg)})`:'');
     L.tooltip({permanent:true,direction:'right',offset:[14,0],className:'mlive',interactive:false}).setLatLng(last).setContent(txt).addTo(TEMP)}
@@ -806,10 +807,10 @@ function geoArea(pts){const R=6378137;let a=0;for(let i=0;i<pts.length;i++){cons
 const lenOf=(pts,close)=>{let d=0;for(let i=1;i<pts.length;i++)d+=MAP.distance(pts[i-1],pts[i]);if(close&&pts.length>2)d+=MAP.distance(pts[pts.length-1],pts[0]);return d};
 const fmtLen=m=>m<1000?qfmt(m)+' m':(m/1000).toLocaleString('fr-FR',{maximumFractionDigits:3})+' km';
 function renderAnnots(){if(!ANNOT)return;ANNOT.clearLayers();IDX.annots.forEach(a=>{
-  const st={color:'#c04de0',weight:3,fillOpacity:.14};const l=a.type==='area'?L.polygon(a.pts,st):L.polyline(a.pts,st);
+  const st={color:'#b565a7',weight:3,fillOpacity:.14};const l=a.type==='area'?L.polygon(a.pts,st):L.polyline(a.pts,st);
   const er=ev=>{if(MODE==='erase'){L.DomEvent.stop(ev);IDX.annots=IDX.annots.filter(x=>x.id!==a.id);markIdx();renderAnnots()}};
   l.on('click',er);ANNOT.addLayer(l);
-  a.pts.forEach(p=>ANNOT.addLayer(L.circleMarker(p,{radius:3,color:'#c04de0',weight:2,fillColor:'#fff',fillOpacity:1,interactive:false})));
+  a.pts.forEach(p=>ANNOT.addLayer(L.circleMarker(p,{radius:3,color:'#b565a7',weight:2,fillColor:'#fff',fillOpacity:1,interactive:false})));
   const segs=a.type==='area'?a.pts.map((p,i)=>[p,a.pts[(i+1)%a.pts.length]]):a.pts.slice(1).map((p,i)=>[a.pts[i],p]);
   if(segs.length>1)segs.forEach(([p1,p2])=>ANNOT.addLayer(L.tooltip({permanent:true,direction:'center',className:'mseglab',interactive:false}).setLatLng([(p1[0]+p2[0])/2,(p1[1]+p2[1])/2]).setContent(fmtLen(MAP.distance(p1,p2)))));
   const at=a.type==='area'?l.getBounds().getCenter():L.latLng(a.pts[a.pts.length-1]);
@@ -1214,7 +1215,7 @@ function printDC(){
     else if(t==='note')h+=`<div class="pf" style="min-height:60px"><i>${esc(l)}</i></div>`;
     else h+=`<div class="pf"><div class="pl">${esc(l)}</div><div class="pv">${esc(t==='d'?fmtD(val):t==='n'&&val!==''&&val!=null?qfmt(num(val)):val??'')}</div></div>`;});
   if(open)h+='</div>';
-  h+=`<div class="pfoot">Établi avec MOMOwork d'après le modèle ${sch.t} — ${esc(A.deno.nom)} — ${new Date().toLocaleDateString('fr-FR')}</div></div>`;
+  h+=`<div class="pfoot">Établi avec MomoJOB d'après le modèle ${sch.t} — ${esc(A.deno.nom)} — ${new Date().toLocaleDateString('fr-FR')}</div></div>`;
   doPrint(h,`${sch.t} — ${A.deno.nom}`);
 }
 
@@ -1226,7 +1227,7 @@ const ACTS={
   stepDone:b=>{const k=b.dataset.k;A.steps[k]=!A.steps[k];touch();renderRNav();if(RTAB==='metre'){b.classList.toggle('done',A.steps[k]);b.innerHTML=A.steps[k]?ic('check',15)+' Étape terminée':ic('circle',15)+' Marquer l\u2019étape terminée'}else renderRTab()},
   msub:b=>{MSUB=b.dataset.v;$$('.mseg button').forEach(x=>x.classList.toggle('on',x.dataset.v===MSUB));$('#mapuWrap').style.visibility=MSUB==='plan'?'':'hidden';$('#mpostes').style.display=MSUB==='postes'?'':'none';if(MSUB==='postes')renderPostes()},
   delAff:async()=>{if(!await appConfirm(`Supprimer définitivement l'affaire « ${esc(A.deno.nom)} » et son fichier de sauvegarde ?`,'Supprimer'))return;const id=A.id;IDX.affaires=IDX.affaires.filter(s=>s.id!==id);CACHE.delete(id);DIRTY.delete(id);try{await Store.delAff(id)}catch(e){}markIdx();closeRapport(true);toast('Affaire supprimée')},
-  exportAff:()=>download(`MOMOwork_${A.deno.nom.replace(/[^\w\-]+/g,'_').slice(0,40)}_${stamp()}.mmw`,JSON.stringify(A)),
+  exportAff:()=>download(`MomoJOB_${A.deno.nom.replace(/[^\w\-]+/g,'_').slice(0,40)}_${stamp()}.mmw`,JSON.stringify(A)),
   printSynth:()=>printSynth(),
   geo:async()=>{const q=A.deno.adresse.trim();if(!q)return toast('Saisissez une adresse','err');const r=await geocode(q);if(!r)return toast('Adresse introuvable','err');A.deno.lat=r.lat;A.deno.lng=r.lng;touch();$('#posinfo').textContent=posTxt(A.deno);toast('Affaire localisée','ok')},
   place:()=>{MOVEA=A;A=null;$('#rapport').classList.remove('on');setView('map');if(MOVEA.deno.lat!=null)MAP.setView([MOVEA.deno.lat,MOVEA.deno.lng],Math.max(MAP.getZoom(),15));setMode('move')},
@@ -1280,7 +1281,7 @@ R.addEventListener('drop',e=>{if(RTAB!=='docs')return;e.preventDefault();$('#dro
 document.addEventListener('mousedown',e=>{const b=e.target.closest('[data-cmd]');if(!b)return;e.preventDefault();document.execCommand(b.dataset.cmd,false,null);const ed=b.closest('.rte')?.querySelector('[contenteditable]');ed&&ed.dispatchEvent(new Event('input',{bubbles:true}))});
 
 /* ============ Impression ============ */
-function pHead(title){return `<div class="phead"><div>${wordmarkSVG('#9D00C2','#808080','#fff')}<h1>${esc(title)}</h1></div><div style="text-align:right;font-size:10px">Édité le ${new Date().toLocaleDateString('fr-FR')}</div></div>`}
+function pHead(title){return `<div class="phead"><div>${wordmarkSVG('#934484','#808080')}<h1>${esc(title)}</h1></div><div style="text-align:right;font-size:10px">Édité le ${new Date().toLocaleDateString('fr-FR')}</div></div>`}
 function doPrint(html,title){const p=$('#print');p.innerHTML=html;const old=document.title;document.title=title.replace(/[\\/:*?"<>|]/g,'-');window.print();setTimeout(()=>{document.title=old},400)}
 window.addEventListener('afterprint',()=>{$('#print').innerHTML=''});
 function printSynth(){
@@ -1297,7 +1298,7 @@ function printSynth(){
   const todos=[];a.events.forEach(e=>{if(e.type==='todo')e.items.forEach(it=>{if(!it.done)todos.push(esc(it.t)+' <i>('+esc(e.titre)+')</i>')})});
   h+=`<h2>Tâches ouvertes</h2>${todos.length?'<ul>'+todos.map(t=>`<li>${t}</li>`).join('')+'</ul>':'<p>Aucune.</p>'}`;
   if(d.notes)h+=`<h2>Notes</h2><div>${d.notes}</div>`;
-  h+=`<div class="pfoot">MOMOwork — rapport de suivi d'affaire</div></div>`;
+  h+=`<div class="pfoot">MomoJOB — rapport de suivi d'affaire</div></div>`;
   doPrint(h,'Rapport — '+d.nom);
 }
 
@@ -1355,35 +1356,35 @@ $('#btnSettings').onclick=async()=>{
   $('#s-wipe',body).onclick=async()=>{if(!await appConfirm('Effacer toutes les données gardées dans ce navigateur (affaires en mode navigateur, cache d\u2019index, lien vers le dossier) ? Les fichiers .mmw du dossier ne sont pas touchés.','Tout effacer'))return;await IDB.clear('kv');await IDB.clear('aff');window.onbeforeunload=null;DIRTY.clear();IDXDIRTY=false;location.reload()};
   await m;
 };
-$('#btnGuide').onclick=()=>modal({title:ic('help',18)+' Guide MOMOwork',wide:true,body:`<div class="guide">
+$('#btnGuide').onclick=()=>modal({title:ic('help',18)+' Guide MomoJOB',wide:true,body:`<div class="guide">
 <h3>Principe</h3><p>La carte n'affiche que les <b>points</b> des affaires (index léger). Le dossier complet d'une affaire — étapes, documents joints, DC, métré — n'est <b>chargé qu'au clic</b> sur son point, depuis son propre fichier .mmw.</p>
-<h3>Sauvegarde</h3><ul><li><b>Nouvelle sauvegarde</b> : choisissez un dossier de travail. MOMOwork y écrit <code>MOMOwork.mmw</code> (index : points, carnet, fiche entreprise) et un sous-dossier <code>affaires/</code> avec un .mmw par affaire. L'entrée se grise et affiche une coche verte une fois active.</li><li><b>Sauvegarde auto</b> : réglable en minutes ou en heures (0 = désactivée). Le point orange sur la disquette signale des modifications en attente.</li><li><b>Sauvegarde manuelle</b> : crée un fichier complet daté <code>MOMOwork_save-manuelle_….mmw</code> à côté de la sauvegarde auto (rechargeable via « Charger un fichier .mmw »).</li><li>Au redémarrage, le navigateur peut redemander l'accès au dossier : un clic sur une affaire ou sur « Reconnecter » suffit.</li><li>Sans Chrome/Edge, les données restent dans le navigateur ; utilisez Exporter / Charger pour les fichiers.</li></ul>
+<h3>Sauvegarde</h3><ul><li><b>Nouvelle sauvegarde</b> : choisissez un dossier de travail. MomoJOB y écrit <code>MomoJOB.mmw</code> (index : points, carnet, fiche entreprise) et un sous-dossier <code>affaires/</code> avec un .mmw par affaire. L'entrée se grise et affiche une coche verte une fois active.</li><li><b>Sauvegarde auto</b> : réglable en minutes ou en heures (0 = désactivée). Le point orange sur la disquette signale des modifications en attente.</li><li><b>Sauvegarde manuelle</b> : crée un fichier complet daté <code>MomoJOB_save-manuelle_….mmw</code> à côté de la sauvegarde auto (rechargeable via « Charger un fichier .mmw »).</li><li>Au redémarrage, le navigateur peut redemander l'accès au dossier : un clic sur une affaire ou sur « Reconnecter » suffit.</li><li>Sans Chrome/Edge, les données restent dans le navigateur ; utilisez Exporter / Charger pour les fichiers.</li></ul>
 <h3>Carte</h3><p>Pins par état : ${Object.values(ETATS).map(v=>`<span style="display:inline-flex;align-items:center;gap:4px;margin-right:8px"><span class="rpin" style="background:${v.c};color:#fff;width:20px;height:20px">${ic(v.e,12)}</span>${v.l}</span>`).join('')}<span style="display:inline-flex;align-items:center;gap:4px;margin-right:8px"><span class="rpin" style="background:#38BDF8;color:#fff;width:20px;height:20px">${ic('clock',12)}</span>AO répondu</span><span style="display:inline-flex;align-items:center;gap:4px"><span class="rpin" style="background:#F4C20D;color:#fff;width:20px;height:20px">${ic('search',12)}</span>À valider</span>. Le tag « Appel d'offre » cycle : tous → non répondus → à valider → répondus → masqués. Palette de gauche : fonds OSM / Esri / OpenTopoMap / IGN, surcouches cadastre / pentes / communes, cotes et aires.</p>
 <h3>Rapport de suivi</h3><p>Le clic sur un point ouvre le rapport : échéance, avancement des 6 étapes (Dénomination → Étude préliminaire → Consultation des prix → Métré → Dossier administratif → Remise), documents liés, tâches, météo. Chaque onglet d'étape a son bouton « Marquer l'étape terminée ». « Rapport PDF » l\u2019imprime.</p>
-<h3>Métré — Mapulator intégré</h3><p>L'onglet Métré contient Mapulator complet. Chargez le plan (Setup), calez l'échelle et tracez vos VRD, tranchées, surfaces, terrassements et pointages : le projet est enregistré <b>dans le fichier de l'affaire</b> au fil des modifications. Les quantités arrivent dans « Σ Postes &amp; prix » où vous saisissez les prix unitaires ; le total alimente le DC3. « Importer un .map » reprend un ancien projet Mapulator, « Exporter le .map » le ressort.</p><h3>MOMOtion Flow</h3><p>Sauvegarde › Charger un fichier accepte les sauvegardes <code>.MTF</code> (et <code>.json</code>) de MOMOtion Flow : les affaires sont ajoutées avec leur position, client, échéance, statut, to-do, documents, tableurs et pièces jointes ; le carnet est fusionné. Réimporter un .MTF plus récent met à jour les mêmes affaires sans toucher à ce qui a été fait dans MOMOwork.</p>
+<h3>Métré — Mapulator intégré</h3><p>L'onglet Métré contient Mapulator complet. Chargez le plan (Setup), calez l'échelle et tracez vos VRD, tranchées, surfaces, terrassements et pointages : le projet est enregistré <b>dans le fichier de l'affaire</b> au fil des modifications. Les quantités arrivent dans « Σ Postes &amp; prix » où vous saisissez les prix unitaires ; le total alimente le DC3. « Importer un .map » reprend un ancien projet Mapulator, « Exporter le .map » le ressort.</p><h3>MOMOtion Flow</h3><p>Sauvegarde › Charger un fichier accepte les sauvegardes <code>.MTF</code> (et <code>.json</code>) de MOMOtion Flow : les affaires sont ajoutées avec leur position, client, échéance, statut, to-do, documents, tableurs et pièces jointes ; le carnet est fusionné. Réimporter un .MTF plus récent met à jour les mêmes affaires sans toucher à ce qui a été fait dans MomoJOB.</p>
 <h3>DC1 · DC2 · DC3 · DC4</h3><p>Remplissez une fois la fiche entreprise : les formulaires de chaque affaire se pré-remplissent (acheteur, objet, identité, CA, effectifs, RIB…). Un DC4 par sous-traitant, choisi dans le carnet. Impression en PDF au format du modèle.</p>
 <h3>Raccourcis</h3><p><b>Ctrl+S</b> enregistrer · <b>Échap</b> fermer / annuler l'outil.</p></div>`});
 $('#btnFull').onclick=()=>{if(document.fullscreenElement)document.exitFullscreen();else document.documentElement.requestFullscreen?.()};
 let deferredPrompt=null;
 window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPrompt=e});
-window.addEventListener('appinstalled',()=>{$('#btnInstall').style.display='none';toast('MOMOwork installé','ok')});
-$('#btnInstall').onclick=async()=>{if(deferredPrompt){deferredPrompt.prompt();await deferredPrompt.userChoice;deferredPrompt=null}else modal({title:'Installer MOMOwork',body:'<p>L\u2019installation est proposée par Chrome / Edge quand l\u2019appli est servie en <b>https</b> (GitHub Pages). Si rien ne se passe : menu du navigateur › « Installer MOMOwork… ». Elle est peut-être déjà installée.</p>'})};
+window.addEventListener('appinstalled',()=>{$('#btnInstall').style.display='none';toast('MomoJOB installé','ok')});
+$('#btnInstall').onclick=async()=>{if(deferredPrompt){deferredPrompt.prompt();await deferredPrompt.userChoice;deferredPrompt=null}else modal({title:'Installer MomoJOB',body:'<p>L\u2019installation est proposée par Chrome / Edge quand l\u2019appli est servie en <b>https</b> (GitHub Pages). Si rien ne se passe : menu du navigateur › « Installer MomoJOB… ». Elle est peut-être déjà installée.</p>'})};
 if(matchMedia('(display-mode: standalone)').matches)$('#btnInstall').style.display='none';
 
 /* ============ Logo, splash, icônes ============ */
 const MPATH='M0 0L417 579L830 0V827H693V430L417 816L138 429V827H0Z';
-/* Lettres WORK tracées depuis le logo (colonne verticale, du bas vers le haut : W, O, R, K) */
-const WORKFL=["M886 818 886 944 1100 944 1101 945 1100 953 886 953 886 1078 1100 1078 1101 1079 1101 1085 1097 1088 886 1088 886 1213 1181 1213 1182 1212 1201 1212 1225 1209 1233 1207 1245 1201 1254 1191 1257 1184 1261 1162 1261 1144 1262 1143 1262 819 1261 818Z", "M895 570 891 578 888 589 887 613 886 614 886 744 887 745 888 770 891 781 896 790 909 801 926 806 933 806 941 808 965 808 966 809 1207 808 1215 806 1222 806 1236 802 1244 798 1254 787 1258 776 1262 751 1262 608 1257 578 1251 567 1243 560 1228 554 1210 551 1194 551 1193 550 984 549 983 550 938 551 924 553 908 558 900 564ZM993 678 996 675 1100 675 1101 681 1097 684 995 684 993 682Z", "M895 301 889 315 886 345 886 539 887 540 1261 540 1262 539 1262 415 1103 415 1100 412 1100 408 1103 405 1262 405 1262 281 1261 280 1102 280 1101 281 1101 340 1098 343 1090 342 1090 281 1089 280 974 280 973 281 937 282 912 287 902 293ZM961 409 963 406 971 405 1017 405 1020 407 1020 413 1017 415 963 415 961 413Z", "M886 12 886 135 887 136 1009 136 1013 137 1015 140 1014 145 887 145 886 146 886 270 887 271 1261 271 1262 270 1262 146 1261 145 1093 145 1090 142 1090 138 1092 136 1262 136 1262 11 1102 11 1101 12 1101 92 1097 95 1092 95 1090 93 1090 12 1089 11 887 11Z"];
-const WORKD=WORKFL.join('');
+/* Lettres JOB tracées depuis le logo (colonne verticale, du bas vers le haut : J, O, B) */
+const JOBFL=["M889 824 888 825 888 1179 889 1181 1023 1181 1024 1180 1024 929 1027 927 1070 928 1089 932 1103 938 1113 945 1124 956 1134 975 1137 985 1138 998 1140 1004 1140 1020 1138 1029 1137 1047 1135 1052 1134 1061 1131 1068 1131 1072 1125 1088 1125 1092 1109 1131 1096 1153 1083 1170 1176 1201 1179 1203 1197 1208 1200 1210 1205 1209 1229 1174 1230 1170 1242 1149 1249 1129 1255 1117 1258 1102 1261 1096 1261 1092 1267 1074 1268 1061 1270 1057 1271 1044 1273 1038 1274 990 1271 972 1271 964 1265 937 1252 906 1233 879 1219 865 1194 848 1163 835 1129 827 1102 824Z", "M1021 427 991 436 960 452 942 465 932 474 916 493 895 529 889 552 885 562 885 571 882 582 882 597 881 598 882 650 885 662 885 670 895 703 918 742 934 760 948 772 971 787 996 798 1006 800 1016 804 1046 809 1091 810 1127 806 1161 797 1188 784 1205 773 1220 760 1242 734 1248 723 1251 720 1255 712 1255 709 1261 698 1265 682 1268 676 1268 669 1270 665 1271 652 1273 648 1274 639 1273 584 1271 580 1271 572 1268 563 1268 557 1264 547 1261 534 1255 523 1255 520 1240 495 1226 478 1202 457 1188 448 1168 438 1138 428 1106 423 1069 422 1068 423 1048 423ZM1069 530 1092 531 1102 534 1113 541 1122 550 1131 565 1137 582 1138 594 1140 600 1140 631 1138 638 1138 645 1133 662 1125 678 1108 695 1093 701 1079 703 1061 701 1055 699 1044 693 1032 681 1022 664 1015 638 1015 594 1022 568 1032 551 1043 540 1053 534Z", "M1253 49 1238 36 1222 28 1208 23 1187 19 1159 18 1129 22 1112 28 1101 34 1086 48 1075 67 1066 54 1049 39 1032 31 1009 26 978 25 948 29 921 40 907 50 895 65 889 83 889 93 888 94 888 405 889 406 1265 406 1266 405 1266 85 1264 70 1258 56ZM1012 131 1021 131 1026 133 1029 136 1029 301 1027 303 1007 303 1004 301 1004 138 1007 133ZM1133 126 1143 126 1146 127 1151 132 1151 301 1148 303 1128 303 1124 300 1124 134 1128 128Z"];
+const JOBD=JOBFL.join('');
 function logoSVG(bg){
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${bg?'-130 -130 1540 1500':'0 0 1280 1240'}" width="512" height="${bg?498:496}">${bg?'<rect x="-130" y="-130" width="1540" height="1500" rx="270" fill="#fff"/>':''}<path transform="translate(7 8)" fill="#808080" d="${MPATH}"/><path transform="translate(7 385)" fill="#808080" d="${MPATH}"/><path fill="#9D00C2" fill-rule="evenodd" d="${WORKD}"/></svg>`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${bg?'-130 -130 1540 1500':'0 0 1280 1240'}" width="512" height="${bg?498:496}">${bg?'<rect x="-130" y="-130" width="1540" height="1500" rx="270" fill="#fff"/>':''}<path transform="translate(7 8)" fill="#808080" d="${MPATH}"/><path transform="translate(7 385)" fill="#808080" d="${MPATH}"/><path fill="#934484" fill-rule="evenodd" d="${JOBD}"/></svg>`;
 }
-/* Mot-logo d'en-tête, construit comme celui de MomoCAD : MOMO gris + WORK du logo, remis à l'horizontale */
-function wordmarkSVG(col='#B23FD6',grey='#8a8a8a',bg='#1f2937'){
-  return `<svg viewBox="-10 -10 6230 847" role="img" aria-label="MOMOwork" xmlns="http://www.w3.org/2000/svg"><g fill="${grey}"><path d="${MPATH}"/><circle cx="1300" cy="413.5" r="311" fill="none" stroke="${grey}" stroke-width="138"/><path transform="translate(1770 0)" d="${MPATH}"/><circle cx="3070" cy="413.5" r="311" fill="none" stroke="${grey}" stroke-width="138"/></g><path fill="${col}" stroke="${bg}" stroke-width="18" fill-rule="evenodd" transform="translate(3560 0) scale(2.1995) translate(-1262 -837) rotate(90 1262 1213)" d="${WORKD}"/></svg>`;
+/* Mot-logo d'en-tête, construit comme celui de MomoCAD : MOMO gris + JOB du logo, remis à l'horizontale */
+function wordmarkSVG(col='#B565A7',grey='#8a8a8a'){
+  return `<svg viewBox="-10 -10 6100 847" role="img" aria-label="MomoJOB" xmlns="http://www.w3.org/2000/svg"><g fill="${grey}"><path d="${MPATH}"/><circle cx="1300" cy="413.5" r="311" fill="none" stroke="${grey}" stroke-width="138"/><path transform="translate(1770 0)" d="${MPATH}"/><circle cx="3070" cy="413.5" r="311" fill="none" stroke="${grey}" stroke-width="138"/></g><path fill="${col}" fill-rule="evenodd" transform="translate(3560 0) scale(2.1043) translate(-1274 -819) rotate(90 1274 1212)" d="${JOBD}"/></svg>`;
 }
 function craneSVG(){
-  const G='#808080',P='#9D00C2';
+  const G='#808080',P='#934484';
   let mast='';for(let y=1240;y>-150;y-=80){const y2=Math.max(-150,y-80);mast+=`M1330 ${y}L1390 ${y2}M1330 ${y2}H1390`}
   let jib='';for(let x=1330;x>780;x-=60){const x2=Math.max(780,x-60),t=(x-780)/550,t2=(x2-780)/550,u=-150-(12+33*t),u2=-150-(12+33*t2);jib+=`M${x} -150L${x2} ${u2}M${x2} -150V${u2}`}
   let cj='';for(let x=1390;x<1560;x+=50){const x2=Math.min(1560,x+50);cj+=`M${x} -150L${x2} -178M${x2} -150V-178`}
@@ -1401,21 +1402,21 @@ function craneSVG(){
    <rect x="1268" y="-150" width="60" height="52" rx="6" fill="${P}" stroke="none"/>
    <rect x="1278" y="-142" width="30" height="22" rx="3" fill="#fff" stroke="none" opacity=".85"/>
   </g>
-  <g id="trolley"><rect x="1048" y="-158" width="52" height="18" rx="4" fill="#4b5563"/><circle cx="1060" cy="-150" r="5" fill="#9aa1ab"/><circle cx="1088" cy="-150" r="5" fill="#9aa1ab"/></g>
-  <rect class="cable" x="1071" y="-140" width="6" height="1" fill="#6b7280"/>
+  <g id="trolley"><rect x="1051" y="-158" width="52" height="18" rx="4" fill="#4b5563"/><circle cx="1063" cy="-150" r="5" fill="#9aa1ab"/><circle cx="1091" cy="-150" r="5" fill="#9aa1ab"/></g>
+  <rect class="cable" x="1074" y="-140" width="6" height="1" fill="#6b7280"/>
   <g id="hook"><rect x="-22" y="0" width="44" height="30" rx="6" fill="#4b5563"/><circle cx="0" cy="15" r="6" fill="#9aa1ab"/><path d="M0 30v16a14 14 0 1 1-14 14" fill="none" stroke="#4b5563" stroke-width="8" stroke-linecap="round"/></g>`;
 }
 function buildSplash(){
-  $('#workBlocks').innerHTML=WORKFL.map((d,i)=>`<path class="fl fl${i+1}" fill="#9D00C2" fill-rule="evenodd" d="${d}"/>`).join('');
+  $('#workBlocks').innerHTML=JOBFL.map((d,i)=>`<path class="fl fl${i+1}" fill="#934484" fill-rule="evenodd" d="${d}"/>`).join('');
   $('#crane').innerHTML=craneSVG();
   $('#app-logo').innerHTML=wordmarkSVG();
 }
-/* Animation : les deux M se superposent, la grue arrive et pose W, O, R, K étage par étage */
+/* Animation : les deux M se superposent, la grue arrive et pose J, O, B étage par étage */
 function runSplash(){
   const sp=$('#splash');if(!sp)return Promise.resolve();
   if(matchMedia('(prefers-reduced-motion: reduce)').matches||!Element.prototype.animate){$$('#splash .fl').forEach(f=>f.style.opacity=1);return new Promise(r=>setTimeout(r,600))}
   const crane=$('#crane'),hook=$('#hook'),cable=$('#splash .cable'),fl=$$('#splash .fl');
-  const TOP=[818,549,280,11],HX=1074,HY0=-120,anims=[];
+  const TOP=[824,422,18],HX=1077,HY0=-120,anims=[];
   const A=(el,kf,o)=>{const a=el.animate(kf,{fill:'forwards',easing:'cubic-bezier(.45,0,.25,1)',...o});anims.push(a);return a};
   const hookAt=y=>`translate(${HX}px,${y}px)`,cab=y=>`scaleY(${Math.max(1,y+120)})`;
   hook.style.transform=hookAt(HY0);cable.style.transform=cab(HY0);
@@ -1446,7 +1447,7 @@ function makeIcon(size,{bg=true,pad=.1}={}){
   g.save();g.translate((size-W*k)/2,(size-H*k)/2);g.scale(k,k);
   const M=new Path2D(MPATH);g.fillStyle='#808080';
   g.save();g.translate(7,8);g.fill(M);g.restore();g.save();g.translate(7,385);g.fill(M);g.restore();
-  g.fillStyle='#9D00C2';g.fill(new Path2D(WORKD),'evenodd');g.restore();
+  g.fillStyle='#934484';g.fill(new Path2D(JOBD),'evenodd');g.restore();
   return c.toDataURL('image/png');
 }
 function setupIcons(){
@@ -1455,7 +1456,7 @@ function setupIcons(){
   const add=(rel,href,extra={})=>{const l=document.createElement('link');l.rel=rel;l.href=href;Object.assign(l,extra);document.head.append(l)};
   add('icon',fav,{type:'image/png'});add('apple-touch-icon',i192);
   const page=location.href.split('#')[0].split('?')[0];
-  const man={id:'momowork-suivis-de-chantier',name:'MOMOwork - Suivis de chantier',short_name:'MOMOwork',description:'Suivis de chantier',lang:'fr',start_url:page,scope:page.substring(0,page.lastIndexOf('/')+1),display:'standalone',background_color:'#1f2937',theme_color:'#1f2937',
+  const man={id:'momojob-suivis-de-chantier',name:'MomoJOB - Suivis de chantier',short_name:'MomoJOB',description:'Suivis de chantier',lang:'fr',start_url:page,scope:page.substring(0,page.lastIndexOf('/')+1),display:'standalone',background_color:'#1f2937',theme_color:'#1f2937',
     icons:[{src:i192,sizes:'192x192',type:'image/png',purpose:'any'},{src:i512,sizes:'512x512',type:'image/png',purpose:'any'},{src:m512,sizes:'512x512',type:'image/png',purpose:'maskable'}]};
   add('manifest','data:application/manifest+json,'+encodeURIComponent(JSON.stringify(man)));
 }
