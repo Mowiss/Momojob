@@ -498,6 +498,7 @@ const IC={
  send:'<path d="M22 2L11 13M22 2l-7 20-4-9-9-4z"/>',
  save:'<path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8M7 3v5h8"/>',
  print:'<path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/>',
+ gps:'<path d="M3 11l18-8-8 18-2-8z"/>',
  trash:'<path d="M3 6h18M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6M10 11v6M14 11v6M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>',
  x:'<path d="M18 6L6 18M6 6l12 12"/>',
  clip:'<path d="M21.4 11.1l-9.2 9.2a6 6 0 0 1-8.5-8.5l9.2-9.2a4 4 0 0 1 5.7 5.7l-9.2 9.2a2 2 0 0 1-2.8-2.8l8.5-8.5"/>',
@@ -894,11 +895,12 @@ document.addEventListener('click',e=>{if(!e.target.closest('#saveMenu')&&!e.targ
 /* ============ Carte ============ */
 let MAP,MARKERS,ANNOT,TEMP,BASES={},OVERS={},curBase='ortho';const OVERON={};
 const IGN=(layer,fmt='image/png',style='normal')=>`https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=${layer}&STYLE=${style}&TILEMATRIXSET=PM&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&FORMAT=${fmt}`;
-const BASEDEF={plan:['Plan','https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxNativeZoom:19,attribution:'© OpenStreetMap'}],
+const BASEDEF={ortho:['Ortho',IGN('ORTHOIMAGERY.ORTHOPHOTOS','image/jpeg'),{maxNativeZoom:19,attribution:'© IGN'}],
+  ign:['IGN',IGN('GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2'),{maxNativeZoom:19,attribution:'© IGN'}],
+  hist:['1950',IGN('ORTHOIMAGERY.ORTHOPHOTOS.1950-1965','image/png'),{maxNativeZoom:18,attribution:'© IGN — photographies aériennes 1950-1965'}],
+  plan:['Plan','https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxNativeZoom:19,attribution:'© OpenStreetMap'}],
   sat:['Sat.','https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxNativeZoom:19,attribution:'© Esri'}],
-  topo:['Topo','https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',{maxNativeZoom:17,attribution:'© OpenTopoMap'}],
-  ortho:['Ortho',IGN('ORTHOIMAGERY.ORTHOPHOTOS','image/jpeg'),{maxNativeZoom:19,attribution:'© IGN'}],
-  ign:['IGN',IGN('GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2'),{maxNativeZoom:19,attribution:'© IGN'}]};
+  topo:['Topo','https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',{maxNativeZoom:17,attribution:'© OpenTopoMap'}]};
 const GR='https://www.georisques.gouv.fr';
 const PPR_ZONES='PPRN_ZONE_INOND_FXX,PPRN_ZONE_SUBMAR_FXX,PPRN_ZONE_MVT_FXX,PPRN_ZONE_CAV_FXX_01,PPRN_ZONE_CAV_FXX_02,PPRN_ZONE_AVALANCHE_FXX,PPRN_ZONE_FEU_FXX,PPRN_ZONE_SEISME_FXX,PPRT_ZONE_RISQIND_FXX';
 const PPR_COMM='PPRN_COMMUNE_GASPAR,PPRT_COMMUNE_GASPAR';
@@ -932,6 +934,16 @@ function initMap(){
   /* Déplacement de la carte au clic molette maintenu uniquement (comme MomoCAD) ; le clic gauche reste aux outils. Écrans tactiles : glisser au doigt conservé. */
   middlePan(MAP);
   MAP.on('contextmenu',e=>{if(DRAW){L.DomEvent.preventDefault(e.originalEvent);finishDraw()}});
+}
+let LOCMK=null;
+function locateMe(){
+  if(!navigator.geolocation)return toast('Géolocalisation non disponible sur ce navigateur','err');
+  toast('Recherche de votre position…');
+  navigator.geolocation.getCurrentPosition(p=>{const ll=[p.coords.latitude,p.coords.longitude],acc=Math.round(p.coords.accuracy||0);
+    if(LOCMK)MAP.removeLayer(LOCMK);
+    LOCMK=L.layerGroup([L.circle(ll,{radius:acc,color:'#7dd3fc',weight:1,fillColor:'#7dd3fc',fillOpacity:.12,interactive:false}),L.circleMarker(ll,{radius:7,color:'#fff',weight:2,fillColor:'#0ea5e9',fillOpacity:1}).bindTooltip('Vous êtes ici'+(acc?` (± ${acc} m)`:''))]).addTo(MAP);
+    MAP.setView(ll,Math.max(MAP.getZoom(),acc>500?14:17));toast('Position trouvée'+(acc?` — précision ± ${acc} m`:''),'ok')},
+   e=>toast(e.code===1?'Position refusée : autorisez la localisation pour ce site':'Position introuvable','err'),{enableHighAccuracy:true,timeout:15000,maximumAge:60000});
 }
 function setBase(k){MAP.removeLayer(BASES[curBase]);curBase=k;BASES[k].addTo(MAP);BASES[k].bringToBack();renderTools()}
 function toggleOver(k){OVERON[k]=!OVERON[k];if(OVERON[k])OVERS[k].addTo(MAP);else MAP.removeLayer(OVERS[k]);renderTools()}
@@ -1159,19 +1171,21 @@ function renderTools(){
     tb('v:map','map','Vue carte',VIEW==='map','c-blue')+tb('v:list','list','Liste des affaires',VIEW==='list','c-blue')+tb('v:agenda','calendar','Agenda des remises',VIEW==='agenda','c-blue')+SEP+
     tb('new','plus','Nouvelle affaire',false,'c-green')+tb('place','pin','Placer une affaire sur la carte',MODE==='place','c-green')+tb('fit','target','Voir toutes les affaires',false,'c-green'))+
   pal('affichage','Affichage',
-    Object.keys(BASEDEF).map(k=>tb('b:'+k,BASEDEF[k][0],'Fond de carte '+BASEDEF[k][0]+(k==='plan'?' (OpenStreetMap)':k==='sat'?' (satellite Esri)':k==='topo'?' (OpenTopoMap)':' (IGN)'),curBase===k,'txt c-sky')).join('')+SEP+
-    tb('o:cad','parcel','Surcouche : cadastre',OVERON.cad,'c-lime')+tb('o:pente','slope','Surcouche : pentes',OVERON.pente,'c-lime')+tb('o:com','commune','Surcouche : limites communales',OVERON.com,'c-lime')+tb('o:ppr','ppr','Surcouche : zonages réglementaires des PPR — inondation, mouvement de terrain, avalanche, feu de forêt, séisme, technologique (Géorisques). Utilisez « Interroger » pour lire la zone au point.',OVERON.ppr,'c-orange')+SEP+
+    Object.keys(BASEDEF).map(k=>tb('b:'+k,BASEDEF[k][0],'Fond de carte '+BASEDEF[k][0]+(k==='plan'?' (OpenStreetMap)':k==='sat'?' (satellite Esri)':k==='topo'?' (OpenTopoMap)':k==='hist'?' — photos aériennes historiques 1950-1965 (IGN)':k==='ortho'?' — photos aériennes actuelles (IGN)':' (IGN)'),curBase===k,'txt c-sky')).join('')+SEP+
+    tb('o:cad','parcel','Surcouche : cadastre',OVERON.cad,'c-lime')+tb('o:pente','slope','Surcouche : pentes',OVERON.pente,'c-lime')+tb('o:com','commune','Surcouche : limites communales',OVERON.com,'c-lime')+tb('o:ppr','ppr','Surcouche : zonages réglementaires des PPR — inondation, mouvement de terrain, avalanche, feu de forêt, séisme, technologique (Géorisques). Utilisez « Interroger » pour lire la zone au point.',OVERON.ppr,'c-orange')+
     tb('l:wx','sunCloud',LIVEDEF.wx,!!LIVE.wx,'c-sky')+tb('l:radar','rain',LIVEDEF.radar,!!LIVE.radar,'c-sky')+SEP+
-    tb('m:dist','ruler','Mesure : cote / distance',MODE==='dist','c-amber')+tb('m:area','area','Mesure : aire',MODE==='area','c-amber')+tb('m:erase','eraser','Gomme : effacer une mesure',MODE==='erase','c-pink')+tb('m:query','locinfo','Interroger un lieu : adresse, commune, CP, code INSEE, parcelle cadastrale et risques (PPR)',MODE==='query','c-green'))+
+    tb('m:dist','ruler','Mesure : cote / distance',MODE==='dist','c-amber')+tb('m:area','area','Mesure : aire',MODE==='area','c-amber')+tb('m:erase','eraser','Gomme : effacer une mesure',MODE==='erase','c-pink')+tb('m:query','locinfo','Interroger un lieu : adresse, commune, CP, code INSEE, parcelle cadastrale et risques (PPR)',MODE==='query','c-green')+tb('locate','gps','Ma position : centrer la carte sur l\u2019endroit où je suis (GPS du téléphone ou position du navigateur)',false,'c-sky')+tb('mclear','trash','Effacer toutes les mesures de la carte',false,'c-red'))+
   pal('carnet','Carnet',
     tb('d:carnet','contacts','Carnet d\u2019adresses',DRAWER==='carnet','c-purple')+tb('d:ent','building','Fiche entreprise',DRAWER==='ent','c-purple')+tb('hub',`<svg class="ico" width="18" height="18" viewBox="0 0 850 1220" aria-hidden="true"><path fill="currentColor" d="${MPATH}"/><path fill="currentColor" transform="translate(0 384)" d="${MPATH}"/></svg>`,'MOMOgiciels — ouvrir Momohub','','c-mm'));
 }
-$('#tools').addEventListener('click',e=>{const ph=e.target.closest('[data-palt]');if(ph){const k=ph.dataset.palt;PALC[k]=!PALC[k];try{localStorage.setItem('momowork_pal',JSON.stringify(PALC))}catch(err){}ph.parentElement.classList.toggle('closed',!!PALC[k]);return}const b=e.target.closest('[data-tool]');if(!b)return;const [k,v]=b.dataset.tool.split(':');
+$('#tools').addEventListener('click',async e=>{const ph=e.target.closest('[data-palt]');if(ph){const k=ph.dataset.palt;PALC[k]=!PALC[k];try{localStorage.setItem('momowork_pal',JSON.stringify(PALC))}catch(err){}ph.parentElement.classList.toggle('closed',!!PALC[k]);return}const b=e.target.closest('[data-tool]');if(!b)return;const [k,v]=b.dataset.tool.split(':');
   if(k==='hub'){window.open('https://mowiss.github.io/Momohub/','_blank','noopener');return}
   if(k==='v')return setView(v);
   if(k==='new')return newAffaireDialog({});
   if(k==='place'){setView('map');return setMode(MODE==='place'?null:'place')}
   if(k==='fit'){setView('map');return fitAll()}
+  if(k==='locate'){setView('map');return locateMe()}
+  if(k==='mclear'){setView('map');if(!IDX.annots.length)return toast('Aucune mesure à effacer');if(!await appConfirm(`Effacer les ${IDX.annots.length} mesure(s) de la carte ?`,'Tout effacer'))return;IDX.annots=[];markIdx();renderAnnots();return toast('Mesures effacées','ok')}
   if(k==='b'){setView('map');return setBase(v)}
   if(k==='o'){setView('map');return toggleOver(v)}
   if(k==='l'){setView('map');return toggleLive(v)}
