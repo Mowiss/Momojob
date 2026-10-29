@@ -136,7 +136,7 @@ header#top{position:fixed;top:0;left:0;right:0;height:52px;display:flex;align-it
 #tkMomo{position:absolute;left:8px;bottom:0;width:96px;height:108px;overflow:hidden;z-index:2;pointer-events:none}
 #tkMomo .mm{position:absolute;left:22px;top:6px;width:70px;height:72px;pointer-events:auto;cursor:pointer;transform:translateY(58px);transition:transform .45s cubic-bezier(.34,1.56,.64,1)}
 #tkMomo.peek .mm{transform:translateY(33px)}#tkMomo.live .mm{transform:translateY(0)}
-#tkMomo .mic{position:absolute;left:6px;bottom:30px;width:16px;height:24px;transform:translateY(26px);transition:transform .4s cubic-bezier(.34,1.56,.64,1)}
+#tkMomo .mic{position:absolute;left:25px;bottom:30px;width:16px;height:24px;transform:translateY(26px);transition:transform .4s cubic-bezier(.34,1.56,.64,1)}
 #tkMomo.live .mic{transform:none;transition-delay:.18s}
 #tkMomo .mouth{transform-box:fill-box;transform-origin:50% 0}#tkMomo .mouth.talk{animation:mmTalk 1.3s ease-in-out}
 @keyframes mmTalk{0%,100%{transform:scaleY(1)}10%{transform:scaleY(.6)}22%{transform:scaleY(1.12)}34%{transform:scaleY(.7)}46%{transform:scaleY(1.08)}58%{transform:scaleY(.55)}72%{transform:scaleY(1.04)}86%{transform:scaleY(.8)}}
@@ -2091,8 +2091,8 @@ function tkMomoInit(){
   $('#tkMomoSlot').outerHTML=`<div id="tkMomo" aria-hidden="true">
 <svg class="mic" viewBox="0 0 16 24"><rect x="3" y="1" width="10" height="12" rx="5" fill="#d4d4d8"/><path d="M4 5h8M4 7.5h8M4 10h8" stroke="#71717a" stroke-width="1"/><path d="M2.5 10.5a5.5 5 0 0 0 11 0" stroke="#a1a1aa" stroke-width="1.4" fill="none"/><path d="M8 15.5v5" stroke="#a1a1aa" stroke-width="1.8"/><rect x="3" y="20.5" width="10" height="3" rx="1.5" fill="#a1a1aa"/></svg>
 <svg class="mm" viewBox="0 0 70 72"><defs><pattern id="mmStripe" width="6" height="6" patternUnits="userSpaceOnUse"><rect width="6" height="6" fill="#2563eb"/><rect width="2" height="6" fill="#60a5fa"/><rect x="4" width="1" height="6" fill="#1e40af"/></pattern></defs>
-<path class="hair" d="M11 10C15 3 29-.5 43 0c15 .6 23 10 20 29-3-8-8-14-16-16.5C37 10 23 10 11 10z" fill="#050505"/>
-<g class="eyes"><circle cx="28" cy="31" r="6.6" fill="none" stroke="#a3a3a3" stroke-width="3.2"/><circle cx="48" cy="31" r="6.6" fill="none" stroke="#a3a3a3" stroke-width="3.2"/></g>
+<path class="hair" d="M14.5 5.9C14.3 6.6 13.9 8.8 14.0 10.0C14.1 11.2 14.8 12.6 15.2 13.4C15.6 14.2 15.5 14.1 16.4 14.8C17.3 15.5 19.0 17.0 20.6 17.8C22.2 18.6 24.4 19.4 25.9 19.8C27.4 20.2 28.5 19.9 29.4 20.1C30.3 20.3 28.0 20.8 31.2 20.9C34.4 21.0 45.4 21.0 48.5 20.9C51.6 20.8 49.2 20.2 49.8 20.1C50.4 20.0 51.0 20.0 51.9 20.1C52.8 20.2 54.1 20.5 55.1 21.0C56.1 21.5 56.8 21.6 57.8 23.2C58.8 24.8 60.3 29.5 61.0 30.8C61.7 32.1 61.6 31.3 61.8 30.9C62.0 30.5 62.3 29.6 62.4 28.4C62.5 27.2 62.6 25.0 62.5 23.9C62.4 22.8 62.2 22.4 61.9 21.8C61.6 21.2 60.9 20.8 60.5 20.1C60.1 19.4 59.5 18.3 59.4 17.5C59.3 16.7 59.8 15.9 59.8 15.4C59.8 14.9 59.2 15.1 59.1 14.4C59.0 13.7 59.6 12.6 59.1 11.2C58.6 9.8 56.8 7.0 56.0 5.8C55.2 4.6 55.4 4.7 54.2 4.0C53.0 3.4 51.1 2.2 49.0 1.9C46.9 1.6 45.4 1.3 41.5 2.0C37.6 2.7 29.1 5.0 25.6 6.2C22.2 7.4 22.0 8.6 20.8 9.0C19.6 9.4 19.1 9.0 18.5 8.8C17.9 8.6 17.4 8.4 16.9 7.9C16.4 7.4 15.8 6.3 15.4 6.0C15.0 5.7 14.7 5.2 14.5 5.9Z" fill="#050505"/>
+<g class="eyes"><circle cx="28.5" cy="30.5" r="7" fill="none" stroke="#a3a3a3" stroke-width="3"/><circle cx="48.5" cy="30.5" r="7" fill="none" stroke="#a3a3a3" stroke-width="3"/></g>
 <path d="M21 72V57a6 6 0 0 1 6-6h24a6 6 0 0 1 6 6v15z" fill="url(#mmStripe)"/><path d="M39 59l-2.6 13h5.2z" fill="#4c1d95"/><path d="M33 55.5l6 3 6-3v6l-6-3-6 3z" fill="#e9d5ff"/>
 <g class="mouth"><path d="${MPATH}" fill="#a3a3a3" transform="translate(28 45) scale(.0265 .0218)"/></g>
 </svg></div>`;
