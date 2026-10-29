@@ -191,6 +191,10 @@ body.tk #app,body.tk #rapport{bottom:30px}body.tk #toast{bottom:44px}
 #na-map .leaflet-control-zoom a{background:#1f2937;color:#e5e7eb;border-color:#4b5563}
 .na-bases{position:absolute;top:8px;right:8px;z-index:500;display:flex;background:#111827;border:1px solid #4b5563;border-radius:6px;overflow:hidden}
 .na-bases button{border:0;background:transparent;color:#d1d5db;font-size:11.5px;font-weight:600;padding:4px 9px;cursor:pointer}.na-bases button.on{background:var(--blue);color:#fff}
+.qpop .leaflet-popup-content{margin:10px 12px}.qp{display:flex;flex-direction:column;gap:3px}
+.qr{display:flex;align-items:center;gap:8px;border-bottom:1px dashed #374151;padding:3px 0}.qr span{color:#9ca3af;min-width:84px;font-size:11.5px}.qr b{flex:1;color:#f3f4f6;font-weight:600}
+.qwarn{display:flex;align-items:center;gap:5px;color:#fbbf24;font-size:11.5px;margin-top:2px}
+.qbtns{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
 .jprog{display:flex;align-items:center;gap:10px;margin-bottom:12px;color:var(--mute)}.jprog .bar{flex:1}
 .jal .cardh{gap:8px}.jal.st-ok{border-color:#065f46}.jal.over{border-color:var(--acc2);background:var(--acc-l)}
 .jnum{width:26px;height:26px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;color:#111827;font-weight:800;font-size:12px;flex:none}
@@ -519,6 +523,7 @@ const IC={
  wind:'<path d="M3 8h11a3 3 0 1 0-3-3M3 12h16a3 3 0 1 1-3 3M3 16h8"/>',
  flag:'<path d="M5 21V4M5 4h11l-2 4 2 4H5"/>',
  antenna:'<path d="M12 10v11M8 21h8"/><circle cx="12" cy="8" r="2"/><path d="M8.5 4.5a5 5 0 0 0 0 7M15.5 4.5a5 5 0 0 1 0 7M5.6 2a9 9 0 0 0 0 12.4M18.4 2a9 9 0 0 1 0 12.4"/>',
+ locinfo:'<path d="M12 22s7-7.4 7-12.5a7 7 0 0 0-14 0C5 14.6 12 22 12 22z"/><path d="M12 13V9.5M12 7h.01"/>',
  sun:'<circle cx="12" cy="12" r="4.5"/><path d="M12 2v2M12 20v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M2 12h2M20 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4"/>',
  sunCloud:'<path d="M12 2v2M4.9 4.9l1.4 1.4M20 12h2M19.1 4.9l-1.4 1.4M15.9 13.1A4 4 0 1 0 8 11.5"/><path d="M13 22H7a5 5 0 1 1 4.9-6H13a3 3 0 0 1 0 6z"/>',
  cloud:'<path d="M17.5 19H8a6 6 0 1 1 5.7-8h1.8a4.5 4.5 0 1 1 2 8z"/>',
@@ -983,6 +988,37 @@ async function liveRadar(){
     liveStatus('radar',`Radar pluie — image de ${new Date(f.time*1000).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})} (vue départementale)`);
   }catch(e){liveStatus('radar','Radar : '+netMsg(e),true)}
 }
+/* ============ Interroger un lieu — Base Adresse Nationale (Géoplateforme IGN, sans clé) ============ */
+let QMK=null,QLAST=null,QPOP=null;
+async function banReverse(lat,lng,index){
+  const qs=`lon=${lng}&lat=${lat}&limit=1`+(index?`&index=${index}`:'');
+  const urls=[`https://data.geopf.fr/geocodage/reverse?${qs}`].concat(index==='parcel'?[]:[`https://api-adresse.data.gouv.fr/reverse/?lon=${lng}&lat=${lat}&limit=1`]);
+  let err;for(const u of urls){try{const j=await jget(u);return (j.features||[])[0]||null}catch(e){err=e}}throw err;
+}
+async function queryAt(ll){
+  const lat=+ll.lat.toFixed(6),lng=+ll.lng.toFixed(6);
+  if(QMK)MAP.removeLayer(QMK);
+  QMK=L.circleMarker([lat,lng],{radius:6,color:'#fff',weight:2,fillColor:'#34d399',fillOpacity:1,interactive:false}).addTo(MAP);
+  if(QPOP)MAP.closePopup(QPOP);
+  const pop=QPOP=L.popup({maxWidth:340,minWidth:260,className:'qpop',autoPanPadding:[40,40],autoClose:false,closeOnClick:false}).setLatLng([lat,lng]).setContent('<div class="qp"><span class="mute">Recherche dans la Base Adresse Nationale…</span></div>').openOn(MAP);
+  pop.on('remove',()=>{if(QMK){MAP.removeLayer(QMK);QMK=null}});
+  const [ad,pa]=await Promise.allSettled([banReverse(lat,lng,'address'),banReverse(lat,lng,'parcel')]);
+  const f=ad.status==='fulfilled'?ad.value:null,P=f?f.properties:{},pp=pa.status==='fulfilled'&&pa.value?pa.value.properties:null;
+  if(ad.status==='rejected'){pop.setContent(`<div class="qp"><b>Base Adresse Nationale injoignable</b><div class="mute">${esc(netMsg(ad.reason))}</div>${qBtns(lat,lng,'')}</div>`);return}
+  const dist=P.distance!=null?Math.round(P.distance):(f?Math.round(MAP.distance([lat,lng],[f.geometry.coordinates[1],f.geometry.coordinates[0]])):null);
+  const voie=[P.housenumber,P.street||P.name].filter(Boolean).join(' ');
+  const parc=pp?[pp.section&&('section '+pp.section),pp.number&&('n° '+pp.number)].filter(Boolean).join(' ')||pp.id||'':'';
+  QLAST={lat,lng,label:P.label||'',voie,commune:P.city||P.municipality||'',cp:P.postcode||'',insee:P.citycode||pp?.municipalitycode||'',parc,parcId:pp?.id||''};
+  const row=(k,v,copy)=>`<div class="qr"><span>${k}</span><b>${esc(v||'—')}</b>${copy&&v?`<button class="x" data-qcopy="${esc(v)}" title="Copier">${ic('file',13)}</button>`:''}</div>`;
+  pop.setContent(`<div class="qp">${f?`${row('Adresse',voie||P.label,true)}${row('Commune',QLAST.commune)}${row('Code postal',QLAST.cp,true)}${row('Code INSEE',QLAST.insee,true)}${parc?row('Parcelle',parc+(pp?.id?' ('+pp.id+')':''),true):''}${dist!=null&&dist>25?`<div class="qwarn">${ic('warn',13)} Adresse la plus proche, à ${dist<1000?dist+' m':(dist/1000).toFixed(1)+' km'} du point</div>`:''}`:'<div class="mute">Aucune adresse trouvée près de ce point.</div>'}
+    <div class="qr"><span>Coordonnées</span><b>${lat.toFixed(5)}, ${lng.toFixed(5)}</b><button class="x" data-qcopy="${lat.toFixed(6)}, ${lng.toFixed(6)}" title="Copier">${ic('file',13)}</button></div>${qBtns(lat,lng,P.label||'')}</div>`);
+}
+const qBtns=(lat,lng,label)=>`<div class="qbtns"><button class="btn sm pri" data-qcreate="1">${ic('plus',14)} Créer une affaire ici</button>${label?`<button class="btn sm" data-qcopy="${esc(label)}">${ic('file',13)} Copier l\u2019adresse</button>`:''}</div>`;
+document.addEventListener('click',async e=>{
+  const c=e.target.closest('[data-qcreate]');if(c){e.preventDefault();const q=QLAST||{};if(QPOP)MAP.closePopup(QPOP);setMode(null);
+    await newAffaireDialog({lat:q.lat,lng:q.lng,adresse:q.label||'',insee:q.insee,parc:q.parcId||q.parc});return}
+  const k=e.target.closest('[data-qcopy]');if(k){e.preventDefault();try{await navigator.clipboard.writeText(k.dataset.qcopy);toast('Copié : '+k.dataset.qcopy,'ok')}catch(x){toast('Copie impossible','err')}}
+});
 function refreshMarkers(){
   if(!MARKERS)return;if(LIVE.wx&&MAP)liveWxSoon();MARKERS.clearLayers();
   IDX.affaires.forEach(s=>{if(s.lat==null||s.lng==null||!visible(s))return;
@@ -995,11 +1031,12 @@ function refreshMarkers(){
 function fitAll(){if(!MAP)return;const pts=IDX.affaires.filter(s=>s.lat!=null).map(s=>[s.lat,s.lng]);if(pts.length>1)MAP.fitBounds(pts,{padding:[50,50],maxZoom:15});else if(pts.length===1)MAP.setView(pts[0],14)}
 /* Modes : placer, déplacer, mesures */
 let DRAW=null;
-function setMode(m){MODE=m;DRAW=null;LASTCLK=null;TEMP&&TEMP.clearLayers();$('#map').classList.toggle('picking',!!m&&m!=='erase');const H={place:'Cliquez sur la carte pour placer la nouvelle affaire — Échap pour annuler',move:'Cliquez sur la carte pour positionner l\u2019affaire — Échap pour annuler',dist:'Cote : cliquez les points — double-clic, clic droit ou Entrée pour terminer',area:'Aire : cliquez les sommets — double-clic, clic droit ou Entrée pour terminer',erase:'Gomme : cliquez sur une mesure pour l\u2019effacer'};const h=$('#modeHint');h.textContent=H[m]||'';h.style.display=m?'block':'none';if(MAP){if(m==='dist'||m==='area')MAP.doubleClickZoom.disable();else MAP.doubleClickZoom.enable();$('#map').style.cursor=m?'crosshair':''}renderTools()}
+function setMode(m){MODE=m;DRAW=null;LASTCLK=null;TEMP&&TEMP.clearLayers();$('#map').classList.toggle('picking',!!m&&m!=='erase');const H={place:'Cliquez sur la carte pour placer la nouvelle affaire — Échap pour annuler',move:'Cliquez sur la carte pour positionner l\u2019affaire — Échap pour annuler',dist:'Cote : cliquez les points — double-clic, clic droit ou Entrée pour terminer',area:'Aire : cliquez les sommets — double-clic, clic droit ou Entrée pour terminer',erase:'Gomme : cliquez sur une mesure pour l\u2019effacer',query:'Interroger : cliquez sur un lieu pour obtenir l\u2019adresse, la commune, le CP et le code INSEE — Échap pour quitter'};const h=$('#modeHint');h.textContent=H[m]||'';h.style.display=m?'block':'none';if(MAP){if(m==='dist'||m==='area')MAP.doubleClickZoom.disable();else MAP.doubleClickZoom.enable();$('#map').style.cursor=m?'crosshair':''}renderTools()}
 let LASTCLK=null;
 async function mapClick(e){
   const ll=e.latlng;
   if(MODE==='place'){setMode(null);newAffaireDialog({lat:ll.lat,lng:ll.lng});return}
+  if(MODE==='query'){queryAt(ll);return}
   if(MODE==='move'&&MOVEA){const a=MOVEA;MOVEA=null;setMode(null);a.deno.lat=ll.lat;a.deno.lng=ll.lng;A=a;touch();if(!a.deno.adresse){const r=await revGeo(ll.lat,ll.lng);if(r){a.deno.adresse=r;touch()}}RTAB='deno';showRapport();toast('Position mise à jour','ok');return}
   if(MODE==='dist'||MODE==='area'){
     const now=Date.now(),cp=e.containerPoint;
@@ -1057,7 +1094,7 @@ function renderTools(){
     Object.keys(BASEDEF).map(k=>tb('b:'+k,BASEDEF[k][0],'Fond de carte '+BASEDEF[k][0]+(k==='plan'?' (OpenStreetMap)':k==='sat'?' (satellite Esri)':k==='topo'?' (OpenTopoMap)':' (IGN)'),curBase===k,'txt c-sky')).join('')+SEP+
     tb('o:cad','parcel','Surcouche : cadastre',OVERON.cad,'c-lime')+tb('o:pente','slope','Surcouche : pentes',OVERON.pente,'c-lime')+tb('o:com','commune','Surcouche : limites communales',OVERON.com,'c-lime')+SEP+
     tb('l:wx','sunCloud',LIVEDEF.wx,!!LIVE.wx,'c-sky')+tb('l:radar','rain',LIVEDEF.radar,!!LIVE.radar,'c-sky')+SEP+
-    tb('m:dist','ruler','Mesure : cote / distance',MODE==='dist','c-amber')+tb('m:area','area','Mesure : aire',MODE==='area','c-amber')+tb('m:erase','eraser','Gomme : effacer une mesure',MODE==='erase','c-pink'))+
+    tb('m:dist','ruler','Mesure : cote / distance',MODE==='dist','c-amber')+tb('m:area','area','Mesure : aire',MODE==='area','c-amber')+tb('m:erase','eraser','Gomme : effacer une mesure',MODE==='erase','c-pink')+tb('m:query','locinfo','Interroger un lieu : adresse, commune, CP, code INSEE (Base Adresse Nationale)',MODE==='query','c-green'))+
   pal('carnet','Carnet',
     tb('d:carnet','contacts','Carnet d\u2019adresses',DRAWER==='carnet','c-purple')+tb('d:ent','building','Fiche entreprise',DRAWER==='ent','c-purple')+tb('hub',`<svg class="ico" width="18" height="18" viewBox="0 0 850 1220" aria-hidden="true"><path fill="currentColor" d="${MPATH}"/><path fill="currentColor" transform="translate(0 384)" d="${MPATH}"/></svg>`,'MOMOgiciels — ouvrir Momohub','','c-mm'));
 }
@@ -1147,7 +1184,7 @@ async function newAffaireDialog(p){
   }}],wide:true,onOpen:m=>{$('#na-nom',m).focus();setTimeout(initMini,30)}});
   if(mm){mm.remove();mm=null}
   if(!data)return;
-  const a=newAff(data);CACHE.set(a.id,a);A=a;touch();
+  const a=newAff(data);if(p.insee||p.parc)a.deno.notes=[p.insee?'Code INSEE : '+esc(p.insee):'',p.parc?'Parcelle : '+esc(p.parc):''].filter(Boolean).join('<br>');CACHE.set(a.id,a);A=a;touch();
   if(a.deno.lat!=null){setView('map');MAP.setView([a.deno.lat,a.deno.lng],Math.max(MAP.getZoom(),14))}
   RTAB='deno';showRapport();
 }
