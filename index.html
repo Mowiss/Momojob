@@ -128,6 +128,19 @@ header#top{position:fixed;top:0;left:0;right:0;height:52px;display:flex;align-it
 .agline:before,.agline:after{content:"";flex:1;height:2px;background:var(--acc2)}
 
 /* Rapport */
+ #ticker{position:fixed;left:0;right:0;bottom:0;height:30px;background:#0b1220;border-top:1px solid var(--pan2);display:flex;align-items:stretch;z-index:1900;font-size:12.5px}
+#tkCfg{flex:none;display:flex;align-items:center;gap:5px;padding:0 10px;border:0;border-right:1px solid var(--pan2);background:var(--acc);color:#fff;cursor:pointer;letter-spacing:.08em}
+#tkCfg.err{background:#7f1d1d}#tkCfg:hover{filter:brightness(1.15)}
+#tkView{flex:1;overflow:hidden;position:relative;mask-image:linear-gradient(90deg,transparent,#000 24px,#000 calc(100% - 24px),transparent)}
+#tkTrack{display:inline-flex;white-space:nowrap;height:100%;align-items:center;animation:tk 60s linear infinite;will-change:transform}
+#tkView:hover #tkTrack{animation-play-state:paused}
+.tkrun{display:inline-flex;align-items:center;padding-left:24px}
+@keyframes tk{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+.tki{display:inline-flex;align-items:center;gap:7px;color:var(--ink);text-decoration:none;cursor:pointer}.tki:hover{color:#fff;text-decoration:underline}
+.tki b{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:#111827;border-radius:3px;padding:1px 5px}
+.tksep{color:var(--line);margin:0 14px;font-style:normal}
+body.tk #app,body.tk #rapport{bottom:30px}body.tk #toast{bottom:44px}
+@media (prefers-reduced-motion:reduce){#tkTrack{animation-duration:400s!important}}
 #rapport{position:fixed;top:52px;left:0;right:0;bottom:0;background:var(--bg);z-index:1500;display:none;flex-direction:column}
 #rapport.on{display:flex}
 #rhead{display:flex;align-items:center;gap:7px;padding:7px 10px;border-bottom:1px solid var(--pan2);flex-wrap:wrap;background:var(--pan)}
@@ -387,6 +400,7 @@ header#top{position:fixed;top:0;left:0;right:0;height:52px;display:flex;align-it
   <div class="rbody"><nav id="rnav"></nav><div id="rcontent"></div></div>
 </section>
 
+<div id="ticker" style="display:none"><button id="tkCfg" title="Réglages du bandeau"><b>FLASH</b><svg class="ico" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9z"/></svg></button><div id="tkView"><div id="tkTrack"></div></div></div>
 <div id="toast"></div>
 <div id="print"></div>
 <input type="file" id="fileIn" hidden>
@@ -669,12 +683,12 @@ function newAff(p={}){return {app:'MOMOwork-affaire',v:1,id:uid('AF-'),created:n
   prix:{cats:[{l:'Tuyaux & autres VRD',rows:[]},{l:'Éclairage',rows:[]},{l:'Clôtures',rows:[]},{l:'Espaces verts',rows:[]}]},
   metre:{map:null,rows:[]},docs:[],fact:[],jalons:tplJalons(),events:[],dc:{dc1:{},dc2:{},dc3:{},dc4:[]},steps:{}}}
 function normAff(a){const n=newAff();for(const k in n)if(a[k]==null)a[k]=n[k];for(const k in n.deno)if(a.deno[k]===undefined)a.deno[k]=n.deno[k];for(const k of ['dc1','dc2','dc3','dc4'])if(!a.dc[k])a.dc[k]=n.dc[k];return a}
-function summary(a){const d=a.deno;const st=STEPS.map(s=>stepState(a,s));return {id:a.id,mtf:a.mtf||null,fs:a.fs||null,nom:d.nom,ref:d.ref,etat:d.etat,client:d.client.societe,adresse:d.adresse,lat:d.lat,lng:d.lng,echeance:d.echeance,repondu:!!d.repondu,avalider:!!d.avalider,steps:{done:st.filter(x=>x==='done').length,total:STEPS.length},docs:{ok:a.docs.filter(x=>x.st!=='attendu').length,total:a.docs.length},updated:a.updated}}
+function summary(a){const d=a.deno;const st=STEPS.map(s=>stepState(a,s));const jn=(a.jalons||[]).find(j=>!j.valide&&j.prevu);return {id:a.id,mtf:a.mtf||null,fs:a.fs||null,late:(a.fact||[]).filter(factLate).length,jnext:jn?{t:jn.titre,d:daysTo(jn.prevu)}:null,nom:d.nom,ref:d.ref,etat:d.etat,client:d.client.societe,adresse:d.adresse,lat:d.lat,lng:d.lng,echeance:d.echeance,repondu:!!d.repondu,avalider:!!d.avalider,steps:{done:st.filter(x=>x==='done').length,total:STEPS.length},docs:{ok:a.docs.filter(x=>x.st!=='attendu').length,total:a.docs.length},updated:a.updated}}
 function syncEntry(a){const s=summary(a);const i=IDX.affaires.findIndex(x=>x.id===a.id);if(i<0)IDX.affaires.push(s);else IDX.affaires[i]=s}
 function touchAff(a){a.updated=new Date().toISOString();DIRTY.add(a.id);syncEntry(a);markIdx()}
 function touch(){if(A)touchAff(A)}
 function markIdx(){IDXDIRTY=true;updSaveUI();schedRefresh()}
-const schedRefresh=debounce(()=>{refreshMarkers();if(VIEW==='list')renderList();if(VIEW==='agenda')renderAgenda();renderCount()},350);
+const schedRefresh=debounce(()=>{refreshMarkers();if(typeof renderTicker==='function')renderTicker();if(VIEW==='list')renderList();if(VIEW==='agenda')renderAgenda();renderCount()},350);
 const isDirty=()=>DIRTY.size>0||IDXDIRTY;
 function evictClean(){for(const k of [...CACHE.keys()])if(!DIRTY.has(k)&&(!A||A.id!==k)&&(!MOVEA||MOVEA.id!==k))CACHE.delete(k)}
 
@@ -891,7 +905,8 @@ function visible(s){
 /* ============ Données en direct (sans clé) : météo des pins, radar pluie, antennes HS, Bison Futé ============ */
 let LIVE={};try{LIVE=JSON.parse(localStorage.getItem('momojob_live')||'{}')}catch(e){}
 const LV={wx:null,radar:null,ant:null,bf:null},LVS={},LVT={};
-const LIVEDEF={wx:'Météo sur les pins (Open-Meteo)',radar:'Radar de pluie — 2 dernières heures (RainViewer)',ant:'Antennes mobiles en panne ou en maintenance (Arcep)',bf:'Événements routiers sur les nationales (Bison Futé)'};
+const LIVEDEF={wx:'Météo sur les pins (Open-Meteo)',radar:'Radar de pluie — 2 dernières heures (RainViewer)'};
+delete LIVE.ant;delete LIVE.bf;
 const OPCOL={orange:'#ff7900',sfr:'#e2001a',bouygues:'#00a2e0',free:'#9ca3af'};
 const opCol=o=>{o=(o||'').toLowerCase();for(const k in OPCOL)if(o.includes(k))return OPCOL[k];return '#a78bfa'};
 function liveStatus(k,txt,err){LVS[k]={txt,err};renderLiveLegend()}
@@ -899,15 +914,15 @@ function renderLiveLegend(){
   let el=$('#liveLeg');if(!el){el=document.createElement('div');el.id='liveLeg';$('#v-map').append(el)}
   const on=Object.keys(LIVEDEF).filter(k=>LIVE[k]);
   el.style.display=on.length?'':'none';
-  el.innerHTML=on.map(k=>`<div class="ll ${LVS[k]?.err?'err':''}">${ic({wx:'sunCloud',radar:'rain',ant:'antenna',bf:'warn'}[k],13)}<span>${esc(LVS[k]?.txt||'Chargement…')}</span></div>`).join('')+(LIVE.ant?`<div class="ll op">${Object.entries({Orange:'orange',SFR:'sfr',Bouygues:'bouygues',Free:'free'}).map(([l,k])=>`<i style="background:${OPCOL[k]}"></i>${l}`).join(' ')}</div>`:'');
+  el.innerHTML=on.map(k=>`<div class="ll ${LVS[k]?.err?'err':''}">${ic({wx:'sunCloud',radar:'rain',ant:'antenna',bf:'warn'}[k],13)}<span>${esc(LVS[k]?.txt||'Chargement…')}</span></div>`).join('');
 }
 function saveLive(){try{localStorage.setItem('momojob_live',JSON.stringify(LIVE))}catch(e){}}
 function toggleLive(k){LIVE[k]=!LIVE[k];saveLive();applyLive(k);renderTools();renderLiveLegend()}
 function applyLive(k){
   clearInterval(LVT[k]);
   if(!LIVE[k]){if(LV[k]){MAP.removeLayer(LV[k]);LV[k]=null}delete LVS[k];return}
-  const run={wx:liveWx,radar:liveRadar,ant:liveAnt,bf:liveBF}[k];
-  run();LVT[k]=setInterval(run,{wx:15,radar:10,ant:60,bf:6}[k]*60e3);
+  const run={wx:liveWx,radar:liveRadar}[k];if(!run)return;
+  run();LVT[k]=setInterval(run,{wx:15,radar:10}[k]*60e3);
 }
 function initLive(){for(const k in LIVEDEF)if(LIVE[k])applyLive(k);renderLiveLegend()}
 async function jget(u,type='json'){const r=await fetch(u,{cache:'no-store'});if(!r.ok)throw new Error('HTTP '+r.status);return type==='json'?r.json():r.text()}
@@ -940,46 +955,6 @@ async function liveRadar(){
     liveStatus('radar',`Radar pluie — image de ${new Date(f.time*1000).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})} (vue départementale)`);
   }catch(e){liveStatus('radar','Radar : '+netMsg(e),true)}
 }
-/* 3) Antennes indisponibles — Arcep, fichier GeoJSON quotidien (data.gouv.fr) */
-async function liveAnt(){
-  try{const meta=await jget('https://www.data.gouv.fr/api/1/datasets/sites-indisponibles/');
-    const res=(meta.resources||[]).filter(r=>/geo\+?json|json/i.test((r.format||'')+(r.mime||'')+(r.url||''))).sort((x,y)=>String(y.last_modified||y.created_at).localeCompare(String(x.last_modified||x.created_at)))[0];
-    if(!res)throw new Error('aucun fichier');
-    const g=await jget(res.latest||res.url);if(!LIVE.ant)return;
-    if(LV.ant)MAP.removeLayer(LV.ant);
-    const cv=L.canvas({padding:.3});
-    LV.ant=L.geoJSON(g,{pointToLayer:(f,ll)=>L.circleMarker(ll,{renderer:cv,radius:6,weight:2,color:'#111827',fillColor:opCol(f.properties.operateur),fillOpacity:.95}),
-      onEachFeature:(f,l)=>{const p=f.properties||{};const hs=k=>p[k]==='HS'?'<b style="color:#f87171">HS</b>':(p[k]||'—');
-        l.bindPopup(`<b>${esc(p.operateur||'')}</b> — ${esc(p.commune||'')} (${esc(p.departement||'')})<br>${p.raison==='MAINT'?'Maintenance programmée':p.raison==='INT'?'Incident':'Indisponible'}${p.detail?' — '+esc(p.detail):''}<br>Voix : ${hs('voix')} · Data : ${hs('data')}<br><small>2G ${hs('voix2g')} · 3G ${hs('data3g')} · 4G ${hs('data4g')} · 5G ${hs('data5g')}</small><br><small>Du ${esc(p.debut||p.debut_data||p.debut_voix||'?')} au ${esc(p.fin||p.fin_data||p.fin_voix||'en cours')}</small>`)}}).addTo(MAP);
-    const n=(g.features||[]).length,d=res.last_modified?new Date(res.last_modified).toLocaleDateString('fr-FR'):'';
-    liveStatus('ant',`${n} antenne(s) en panne ou maintenance — fichier Arcep du ${d}`);
-  }catch(e){liveStatus('ant','Antennes : '+netMsg(e),true)}
-}
-/* 4) Bison Futé — événements DATEX II du réseau national non concédé */
-const BF_URL='https://tipi.bison-fute.gouv.fr/bison-fute-ouvert/publicationsDIR/Evenementiel-DIR/grt/RRN/content.xml';
-const BFT=[[/roadworks|maintenancework|construction/i,'Travaux','#fbbf24'],[/accident|vehicleobstruction/i,'Accident','#f87171'],[/abnormaltraffic/i,'Bouchon / ralentissement','#fb923c'],[/roadorcarriageway|lanemanagement|closure|reroute/i,'Fermeture / restriction','#ef4444'],[/weather|poorenvironment|roadcondition|nonweather/i,'Chaussée dangereuse','#38bdf8'],[/animal|obstruction|generalobstruction/i,'Obstacle','#a78bfa']];
-function bfParse(xml){
-  const d=new DOMParser().parseFromString(xml,'application/xml');if(d.querySelector('parsererror'))throw new Error('XML illisible');
-  const by=(el,n)=>el.getElementsByTagNameNS('*',n);const out=[];
-  for(const r of by(d,'situationRecord')){
-    const la=by(r,'latitude')[0],lo=by(r,'longitude')[0];if(!la||!lo)continue;
-    const typ=r.getAttributeNS('http://www.w3.org/2001/XMLSchema-instance','type')||r.getAttribute('xsi:type')||'';
-    const t=BFT.find(([re])=>re.test(typ))||[null,'Événement','#9ca3af'];
-    const com=[...by(r,'comment')].map(c=>c.textContent.trim()).filter(Boolean)[0]||[...by(r,'value')].map(c=>c.textContent.trim()).find(v=>v.length>12)||'';
-    out.push({lat:+la.textContent,lng:+lo.textContent,lib:t[1],col:t[2],typ:typ.replace(/^.*:/,''),com,road:(by(r,'roadNumber')[0]||{}).textContent||'',deb:(by(r,'overallStartTime')[0]||{}).textContent||'',fin:(by(r,'overallEndTime')[0]||{}).textContent||''});
-  }
-  return out;
-}
-async function liveBF(){
-  try{const ev=bfParse(await jget(BF_URL,'text'));if(!LIVE.bf)return;
-    if(LV.bf)MAP.removeLayer(LV.bf);LV.bf=L.layerGroup().addTo(MAP);
-    const fd=x=>x?new Date(x).toLocaleString('fr-FR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'';
-    ev.forEach(e=>L.marker([e.lat,e.lng],{icon:L.divIcon({className:'bfpin',iconSize:[24,24],iconAnchor:[12,12],html:`<span style="background:${e.col}">${ic('warn',13)}</span>`})})
-      .bindPopup(`<b>${esc(e.lib)}</b>${e.road?' — '+esc(e.road):''}<br>${esc(e.com).slice(0,400)}${e.deb?`<br><small>Depuis le ${fd(e.deb)}${e.fin?' · fin prévue '+fd(e.fin):''}</small>`:''}<br><small class="mute">${esc(e.typ)} · Bison Futé</small>`).addTo(LV.bf));
-    liveStatus('bf',`${ev.length} événement(s) routier(s) — ${new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}`);
-  }catch(e){liveStatus('bf','Bison Futé : '+netMsg(e)+' — il faudra un relais si ça persiste',true)}
-}
-
 function refreshMarkers(){
   if(!MARKERS)return;if(LIVE.wx&&MAP)liveWxSoon();MARKERS.clearLayers();
   IDX.affaires.forEach(s=>{if(s.lat==null||s.lng==null||!visible(s))return;
@@ -1053,7 +1028,7 @@ function renderTools(){
   pal('affichage','Affichage',
     Object.keys(BASEDEF).map(k=>tb('b:'+k,BASEDEF[k][0],'Fond de carte '+BASEDEF[k][0]+(k==='plan'?' (OpenStreetMap)':k==='sat'?' (satellite Esri)':k==='topo'?' (OpenTopoMap)':' (IGN)'),curBase===k,'txt c-sky')).join('')+SEP+
     tb('o:cad','parcel','Surcouche : cadastre',OVERON.cad,'c-lime')+tb('o:pente','slope','Surcouche : pentes',OVERON.pente,'c-lime')+tb('o:com','commune','Surcouche : limites communales',OVERON.com,'c-lime')+SEP+
-    tb('l:wx','sunCloud',LIVEDEF.wx,!!LIVE.wx,'c-sky')+tb('l:radar','rain',LIVEDEF.radar,!!LIVE.radar,'c-sky')+tb('l:ant','antenna',LIVEDEF.ant,!!LIVE.ant,'c-sky')+tb('l:bf','warn',LIVEDEF.bf,!!LIVE.bf,'c-orange')+SEP+
+    tb('l:wx','sunCloud',LIVEDEF.wx,!!LIVE.wx,'c-sky')+tb('l:radar','rain',LIVEDEF.radar,!!LIVE.radar,'c-sky')+SEP+
     tb('m:dist','ruler','Mesure : cote / distance',MODE==='dist','c-amber')+tb('m:area','area','Mesure : aire',MODE==='area','c-amber')+tb('m:erase','eraser','Gomme : effacer une mesure',MODE==='erase','c-pink'))+
   pal('carnet','Carnet',
     tb('d:carnet','contacts','Carnet d\u2019adresses',DRAWER==='carnet','c-purple')+tb('d:ent','building','Fiche entreprise',DRAWER==='ent','c-purple')+tb('d:liens','globe','Liens MOMOgiciels',DRAWER==='liens','c-purple'));
@@ -1792,7 +1767,7 @@ $('#btnSettings').onclick=async()=>{
 $('#btnGuide').onclick=()=>modal({title:ic('help',18)+' Guide MomoJOB',wide:true,body:`<div class="guide">
 <h3>Principe</h3><p>La carte n'affiche que les <b>points</b> des affaires (index léger). Le dossier complet d'une affaire — étapes, documents joints, DC, métré — n'est <b>chargé qu'au clic</b> sur son point, depuis son propre fichier .mmw.</p>
 <h3>Sauvegarde</h3><ul><li><b>Nouvelle sauvegarde</b> : choisissez un emplacement ; MomoJOB y crée <code>SAVE_MOMOJOB</code> avec <code>MomoJOB.mmw</code> (carte, carnet, fiche entreprise) et un dossier par état : <code>APPEL D'OFFRE</code>, <code>LOCATION</code>, <code>EN ETUDE</code>, <code>EN TRAVAUX</code>, <code>TERMINE</code>, <code>SANS SUITE</code>. Chaque affaire a son dossier <code>Réf - Nom</code> avec son fichier <code>.mmw</code> et une copie lisible de ses pièces jointes (<code>PIECES JOINTES/Documents</code>, <code>PIECES JOINTES/Devis et facturation</code>, <code>PIECES JOINTES/Jalons</code>). Quand l'état ou le nom change, le dossier de l'affaire se déplace tout seul, avec les fichiers que vous y avez ajoutés. Le dossier <code>PIECES JOINTES</code> est tenu à jour par MomoJOB : rangez vos propres fichiers à côté. L'entrée se grise et affiche une coche verte une fois active.</li><li><b>Sauvegarde auto</b> : réglable en minutes ou en heures (0 = désactivée). Le point orange sur la disquette signale des modifications en attente.</li><li><b>Sauvegarde manuelle</b> : crée un fichier complet daté <code>MomoJOB_save-manuelle_….mmw</code> à côté de la sauvegarde auto (rechargeable via « Charger un fichier .mmw »).</li><li>Au redémarrage, le navigateur peut redemander l'accès au dossier : un clic sur une affaire ou sur « Reconnecter » suffit.</li><li>Sans Chrome/Edge, les données restent dans le navigateur ; utilisez Exporter / Charger pour les fichiers.</li></ul>
-<h3>Données en direct</h3><p>Dans AFFICHAGE, quatre filtres activables, sans clé ni compte : <b>météo sur les pins</b> (Open-Meteo, toutes les 15 min), <b>radar de pluie</b> des 2 dernières heures (RainViewer, précision départementale), <b>antennes mobiles en panne ou en maintenance</b> (fichier quotidien de l'Arcep, couleur par opérateur, clic pour le détail), <b>événements routiers</b> sur les nationales non concédées (Bison Futé : travaux, accidents, fermetures, chaussée dangereuse). Un encart en bas à gauche indique l'heure des données ou la raison si une source ne répond pas. Les choix restent mémorisés.</p><h3>Carte</h3><p><b>Déplacer la carte : clic molette maintenu</b> (la molette zoome, le clic gauche sert aux outils et à ouvrir les affaires). Pins par état : ${Object.values(ETATS).map(v=>`<span style="display:inline-flex;align-items:center;gap:4px;margin-right:8px"><span class="rpin" style="background:${v.c};color:#fff;width:20px;height:20px">${ic(v.e,12)}</span>${v.l}</span>`).join('')}<span style="display:inline-flex;align-items:center;gap:4px;margin-right:8px"><span class="rpin" style="background:#38BDF8;color:#fff;width:20px;height:20px">${ic('clock',12)}</span>AO répondu</span><span style="display:inline-flex;align-items:center;gap:4px"><span class="rpin" style="background:#F4C20D;color:#fff;width:20px;height:20px">${ic('search',12)}</span>À valider</span>. Le tag « Appel d'offre » cycle : tous → non répondus → à valider → répondus → masqués. Palette de gauche : fonds OSM / Esri / OpenTopoMap / IGN, surcouches cadastre / pentes / communes, cotes et aires.</p>
+<h3>Données en direct</h3><p>Dans AFFICHAGE, deux filtres activables sans clé : <b>météo sur les pins</b> (Open-Meteo, toutes les 15 min) et <b>radar de pluie</b> des 2 dernières heures (RainViewer, précision départementale). Un encart en bas à gauche indique l'heure des données.</p><h3>Bandeau FLASH</h3><p>En bas de l'écran : alertes MomoJOB (remises J-3 ou dépassées, à valider, factures en retard, jalons), nouveaux avis de marchés de travaux du BOAMP pour vos départements, et flux presse (Infos, Local, BTP) préparés par la GitHub Action. Le bouton FLASH règle les catégories, les départements et la vitesse ; le survol met le défilement en pause ; un clic ouvre l'affaire ou l'article.</p><h3>Carte</h3><p><b>Déplacer la carte : clic molette maintenu</b> (la molette zoome, le clic gauche sert aux outils et à ouvrir les affaires). Pins par état : ${Object.values(ETATS).map(v=>`<span style="display:inline-flex;align-items:center;gap:4px;margin-right:8px"><span class="rpin" style="background:${v.c};color:#fff;width:20px;height:20px">${ic(v.e,12)}</span>${v.l}</span>`).join('')}<span style="display:inline-flex;align-items:center;gap:4px;margin-right:8px"><span class="rpin" style="background:#38BDF8;color:#fff;width:20px;height:20px">${ic('clock',12)}</span>AO répondu</span><span style="display:inline-flex;align-items:center;gap:4px"><span class="rpin" style="background:#F4C20D;color:#fff;width:20px;height:20px">${ic('search',12)}</span>À valider</span>. Le tag « Appel d'offre » cycle : tous → non répondus → à valider → répondus → masqués. Palette de gauche : fonds OSM / Esri / OpenTopoMap / IGN, surcouches cadastre / pentes / communes, cotes et aires.</p>
 <h3>Rapport de suivi</h3><p>Le clic sur un point ouvre le rapport : échéance, avancement des 6 étapes (Dénomination → Étude préliminaire → Consultation des prix → Métré → Dossier administratif → Remise), documents liés, tâches, météo. Chaque onglet d'étape a son bouton « Marquer l'étape terminée ». « Rapport PDF » l\u2019imprime.</p>
 <h3>Métré — Mapulator intégré</h3><p>L'onglet Métré contient Mapulator complet. Chargez le plan (Setup), calez l'échelle et tracez vos VRD, tranchées, surfaces, terrassements et pointages : le projet est enregistré <b>dans le fichier de l'affaire</b> au fil des modifications. Les quantités arrivent dans « Σ Postes &amp; prix » où vous saisissez les prix unitaires ; le total alimente le DC3. « Importer un .map » reprend un ancien projet Mapulator, « Exporter le .map » le ressort.</p><h3>Télécharger</h3><p>Le bouton « Télécharger » en bas du menu de l'affaire produit un ZIP aux noms canoniques <code>1 - …</code>, <code>2 - …</code> : soit le <b>dossier de réponse client</b> (DC1 à DC4 en PDF, devis et documents cochés « Réponse »), soit le <b>dossier complet</b> (rapport, administratif, devis &amp; factures, documents par catégorie, métré, chronologie, fichier .mmw). Chaque élément peut être décoché avant le téléchargement.</p><h3>Devis &amp; facturation</h3><p>Épinglez devis, factures, situations et avoirs (fichier + n°, date, HT, TVA, statut, échéance). Les totaux (accepté, facturé, reste à facturer, encaissé, en attente) remontent dans le rapport ; une facture non payée après son échéance passe « En retard ».</p><h3>MOMOtion Flow</h3><p>Sauvegarde › Charger un fichier accepte les sauvegardes <code>.MTF</code> (et <code>.json</code>) de MOMOtion Flow : les affaires sont ajoutées avec leur position, client, échéance, statut, to-do, documents, tableurs et pièces jointes ; le carnet est fusionné. Réimporter un .MTF plus récent met à jour les mêmes affaires sans toucher à ce qui a été fait dans MomoJOB.</p>
 <h3>Jalons</h3><p>Chaque affaire a une liste de jalons modifiable (visite, dossier administratif, mémoire, offre de prix, remise, attribution, démarrage, réception…). Joignez à chaque jalon ses pièces — DC1, DC2, attestations, mémoire, DPGF… — par le bouton « Joindre » ou en glissant les fichiers sur le jalon, puis « Valider ». « Enregistrer comme modèle » fait reprendre la liste par les nouvelles affaires.</p><h3>Raccourcis</h3><p><b>Ctrl+S</b> enregistrer · <b>Échap</b> fermer / annuler l'outil.</p></div>`});
@@ -1902,6 +1877,72 @@ document.addEventListener('keydown',e=>{
 });
 window.addEventListener('beforeunload',e=>{if(isDirty()){e.preventDefault();e.returnValue=''}});
 
+/* ============ Bandeau FLASH (bas d'écran) ============ */
+const TKCAT={alertes:['Alertes','#f472b6'],boamp:['Marchés publics','#34d399'],infos:['Infos','#60a5fa'],local:['Local','#fbbf24'],btp:['BTP','#fb923c']};
+const TKDEF={on:true,cats:{alertes:true,boamp:true,infos:true,local:true,btp:true},deps:'5,4',boampDays:7,feedUrl:'https://raw.githubusercontent.com/Mowiss/Momojob/flash/flash.json',speed:60};
+let TK=(()=>{let c={};try{c=JSON.parse(localStorage.getItem('momojob_flash')||'{}')}catch(e){}return {...TKDEF,...c,cats:{...TKDEF.cats,...(c.cats||{})}}})();
+const TKD={boamp:[],feed:[],feedAt:null,boampAt:null,err:{}};let TKSIG='';
+const saveTK=()=>{try{localStorage.setItem('momojob_flash',JSON.stringify(TK))}catch(e){}};
+function tkAlertes(){
+  const out=[];if(!IDX)return out;
+  IDX.affaires.forEach(s=>{
+    if(s.etat==='ao'&&!s.repondu&&s.echeance){const j=daysTo(s.echeance);
+      if(j!=null&&j<0&&j>=-7)out.push({t:`Échéance dépassée de ${-j} j — ${s.nom}`,id:s.id,w:3});
+      else if(j!=null&&j<=3)out.push({t:`Remise ${j===0?'AUJOURD’HUI':'J-'+j} (${fmtD(s.echeance)}) — ${s.nom}`,id:s.id,w:j===0?3:2})}
+    if(s.avalider)out.push({t:`À valider — ${s.nom}`,id:s.id,w:1});
+    if(s.late)out.push({t:`${s.late} facture(s) en retard — ${s.nom}`,id:s.id,w:2});
+    if(s.jnext&&s.jnext.d!=null&&s.jnext.d<=2)out.push({t:`Jalon « ${s.jnext.t} » ${s.jnext.d<0?'en retard':s.jnext.d===0?'prévu aujourd’hui':'prévu J-'+s.jnext.d} — ${s.nom}`,id:s.id,w:s.jnext.d<0?2:1});
+  });
+  return out.sort((a,b)=>b.w-a.w);
+}
+async function tkBoamp(){
+  const deps=String(TK.deps).split(/[,; ]+/).map(x=>x.trim().replace(/^0+(?=\d)/,'')).filter(Boolean);if(!deps.length){TKD.boamp=[];return}
+  const since=new Date(Date.now()-num(TK.boampDays||7)*864e5).toISOString().slice(0,10);
+  const where=`(${deps.map(d=>`code_departement="${d}"`).join(' or ')}) and type_marche="TRAVAUX" and dateparution>=date'${since}'`;
+  const u='https://boamp-datadila.opendatasoft.com/api/explore/v2.1/catalog/datasets/boamp/records?'+new URLSearchParams({where,order_by:'dateparution desc',limit:'40',select:'idweb,objet,nomacheteur,dateparution,datelimitereponse,code_departement,nature_libelle,url_avis'});
+  try{const j=await jget(u);TKD.boamp=(j.results||[]).filter(r=>!/attribution|résultat/i.test(r.nature_libelle||'')).map(r=>({t:`[${[].concat(r.code_departement||[]).join('/')}] ${r.nomacheteur||''} — ${r.objet||''}${r.datelimitereponse?' · limite '+fmtD(String(r.datelimitereponse).slice(0,10)):''}`,href:r.url_avis||`https://www.boamp.fr/pages/avis/?q=idweb:${r.idweb}`}));TKD.boampAt=new Date();delete TKD.err.boamp}
+  catch(e){TKD.err.boamp=netMsg(e)}
+}
+async function tkFeed(){
+  if(!TK.feedUrl){TKD.feed=[];return}
+  try{const j=await jget(TK.feedUrl+(TK.feedUrl.includes('?')?'&':'?')+'t='+Math.floor(Date.now()/3e5));TKD.feed=(j.items||[]).map(x=>({cat:x.cat,t:(x.src?x.src+' : ':'')+x.title,href:x.link,date:x.date}));TKD.feedAt=j.generated?new Date(j.generated):new Date();delete TKD.err.feed}
+  catch(e){TKD.err.feed='flux presse : '+netMsg(e)+' (la GitHub Action est-elle en place ?)'}
+}
+function tkItems(){
+  const L=[];
+  if(TK.cats.alertes)tkAlertes().forEach(x=>L.push({cat:'alertes',...x}));
+  if(TK.cats.boamp)TKD.boamp.slice(0,25).forEach(x=>L.push({cat:'boamp',...x}));
+  ['infos','local','btp'].forEach(c=>{if(TK.cats[c])TKD.feed.filter(x=>x.cat===c).slice(0,12).forEach(x=>L.push(x))});
+  return L;
+}
+function renderTicker(){
+  const bar=$('#ticker');document.body.classList.toggle('tk',!!TK.on);bar.style.display=TK.on?'':'none';if(!TK.on)return;
+  const L=tkItems(),errs=Object.values(TKD.err);
+  const sig=JSON.stringify(L.map(x=>x.t))+errs.join();if(sig===TKSIG)return;TKSIG=sig;
+  const one=L.length?L.map(x=>`<a class="tki" ${x.href?`href="${esc(x.href)}" target="_blank" rel="noopener"`:`data-tkopen="${x.id}"`}><b style="background:${TKCAT[x.cat][1]}">${TKCAT[x.cat][0]}</b>${esc(x.t)}</a>`).join('<i class="tksep">•</i>'):`<span class="tki mute">Aucun flash pour l’instant${errs.length?' — '+esc(errs.join(' · ')):''}</span>`;
+  const tr=$('#tkTrack');tr.innerHTML=`<div class="tkrun">${one}<i class="tksep">•</i></div><div class="tkrun" aria-hidden="true">${one}<i class="tksep">•</i></div>`;
+  requestAnimationFrame(()=>{const w=tr.firstElementChild.offsetWidth;tr.style.animationDuration=Math.max(20,w/(TK.speed||60))+'s'});
+  $('#tkCfg').title=['Réglages du bandeau',TKD.boampAt?'BOAMP : '+TKD.boampAt.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}):'',TKD.feedAt?'Presse : '+TKD.feedAt.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}):'',...errs].filter(Boolean).join('\n');
+  $('#tkCfg').classList.toggle('err',errs.length>0);
+}
+async function tkRefresh(){await Promise.all([TK.cats.boamp?tkBoamp():null,(TK.cats.infos||TK.cats.local||TK.cats.btp)?tkFeed():null]);TKSIG='';renderTicker()}
+function initTicker(){renderTicker();tkRefresh();setInterval(tkRefresh,10*60e3);setInterval(()=>renderTicker(),60e3)}
+$('#ticker').addEventListener('click',e=>{const a=e.target.closest('[data-tkopen]');if(a){e.preventDefault();openAffaire(a.dataset.tkopen)}});
+$('#tkCfg').onclick=async()=>{
+  const body=document.createElement('div');
+  body.innerHTML=`<div class="f"><span>Catégories affichées</span><div class="radios">${Object.entries(TKCAT).map(([k,[l,c]])=>`<label><input type="checkbox" data-tkc="${k}" ${TK.cats[k]?'checked':''}> <i style="display:inline-block;width:10px;height:10px;border-radius:3px;background:${c}"></i> ${l}</label>`).join('')}</div></div>
+   <div class="fgrid" style="margin-top:12px"><label class="f"><span>BOAMP — départements (sans zéro : 5 = Hautes-Alpes, 4, 38, 26, 73…)</span><input id="tk-deps" value="${esc(TK.deps)}"></label><label class="f"><span>BOAMP — avis des N derniers jours (travaux)</span><input id="tk-days" type="number" min="1" max="60" value="${esc(TK.boampDays)}"></label>
+   <label class="f c2"><span>Flux presse (fichier flash.json produit par la GitHub Action)</span><input id="tk-url" value="${esc(TK.feedUrl)}"></label>
+   <label class="f"><span>Vitesse de défilement (px/s)</span><input id="tk-sp" type="number" min="20" max="200" value="${esc(TK.speed)}"></label>
+   <label class="chk" style="align-self:end"><input type="checkbox" id="tk-on" ${TK.on?'checked':''}> <span>Afficher le bandeau</span></label></div>
+   <p class="mute" style="margin-top:10px">${['Alertes : échéances J-3, remises dépassées, affaires à valider, factures en retard, jalons prévus ou en retard.',TKD.boampAt?'BOAMP mis à jour à '+TKD.boampAt.toLocaleTimeString('fr-FR'):'',TKD.feedAt?'Presse générée à '+TKD.feedAt.toLocaleTimeString('fr-FR'):'',...Object.values(TKD.err)].filter(Boolean).map(esc).join('<br>')}</p>`;
+  const ok=await modal({title:ic('send',18)+' Bandeau FLASH',body,wide:true,buttons:[{l:'Annuler'},{l:'Appliquer',v:true,cls:'pri'}]});
+  if(!ok)return;
+  $$('[data-tkc]',body).forEach(c=>TK.cats[c.dataset.tkc]=c.checked);
+  TK.deps=$('#tk-deps',body).value;TK.boampDays=num($('#tk-days',body).value)||7;TK.feedUrl=$('#tk-url',body).value.trim();TK.speed=num($('#tk-sp',body).value)||60;TK.on=$('#tk-on',body).checked;
+  saveTK();TKSIG='';renderTicker();tkRefresh();
+};
+
 /* ============ Démarrage ============ */
 function hydrateIcons(r=document){$$('[data-ic]',r).forEach(el=>{if(!el.querySelector('svg'))el.insertAdjacentHTML('afterbegin',ic(el.dataset.ic,18))})}
 function renderAll(){renderFbar();renderTools();refreshMarkers();renderAnnots();if(VIEW==='list')renderList();if(VIEW==='agenda')renderAgenda();if(DRAWER)renderDrawer();updSaveUI()}
@@ -1913,7 +1954,7 @@ async function boot(){
   try{IDX=IDB.db?await Store.loadIndex():null}catch(e){IDX=null}
   if(!IDX)IDX=newIndex();normIdx();
   try{initMap()}catch(e){console.error(e);$('#map').innerHTML='<p style="padding:20px" class="mute">Carte indisponible (pas de connexion au serveur de cartes).</p>'}
-  renderAll();startAuto();if(MAP)initLive();
+  renderAll();startAuto();if(MAP)initLive();initTicker();
   if(MAP&&!IDX.settings.center)fitAll();
   splashDone.then(()=>{$('#splash').classList.add('out');setTimeout(()=>$('#splash').remove(),450);
     if(Store.mode==='folder'&&!Store.granted)toast(`Cliquez sur une affaire ou sur Sauvegarde › Reconnecter pour rouvrir le dossier « ${Store.dir.name} »`);
