@@ -263,10 +263,29 @@ header#top{position:fixed;top:0;left:0;right:0;height:52px;display:flex;align-it
 #splash{position:fixed;inset:0;background:#fff;z-index:5000;display:flex;align-items:center;justify-content:center;transition:opacity .45s}
 #splash.out{opacity:0;pointer-events:none}
 #splash svg{width:min(300px,55vw);overflow:visible}
-#splash .m1{animation:mTop .9s cubic-bezier(.2,.8,.2,1) both}
-#splash .m2{animation:mBot .9s cubic-bezier(.2,.8,.2,1) both}
-@keyframes mTop{from{transform:translateY(-700px);opacity:0}to{transform:none;opacity:1}}
-@keyframes mBot{from{transform:translateY(700px);opacity:0}to{transform:none;opacity:1}}
+/* Comme MomoCAD : M O M O écrit sur une ligne, les O s'effacent, les M glissent à l'horizontale puis se superposent */
+#splash .m1,#splash .m2,#splash .o1,#splash .o2{transform-box:fill-box;transform-origin:center}
+#splash .m1{animation:mjM1 1.6s both}
+#splash .m2{animation:mjM2 1.6s both}
+#splash .o1{animation:mjO 1s .08s both}
+#splash .o2{animation:mjO 1s .16s both}
+@keyframes mjM1{
+  0%{opacity:0;transform:translate(-1062px,192px) scale(.9)}
+  15%{opacity:1;transform:translate(-1062px,192px) scale(1)}
+  44%{transform:translate(-1062px,192px);animation-timing-function:cubic-bezier(.65,0,.35,1)}
+  78%{transform:translate(0,192px);animation-timing-function:cubic-bezier(.34,1.56,.64,1)}
+  100%{opacity:1;transform:translate(0,0)}}
+@keyframes mjM2{
+  0%,10%{opacity:0;transform:translate(668px,-185px) scale(.9)}
+  25%{opacity:1;transform:translate(668px,-185px) scale(1)}
+  44%{transform:translate(668px,-185px);animation-timing-function:cubic-bezier(.65,0,.35,1)}
+  78%{transform:translate(0,-185px);animation-timing-function:cubic-bezier(.34,1.56,.64,1)}
+  100%{opacity:1;transform:translate(0,0)}}
+@keyframes mjO{
+  0%{opacity:0;transform:scale(.6)}
+  25%{opacity:1;transform:scale(1)}
+  48%{opacity:1;transform:scale(1);animation-timing-function:cubic-bezier(.6,-0.3,.7,.4)}
+  80%,100%{opacity:0;transform:scale(0)}}
 #splash .fl{opacity:0}
 #splash #crane{opacity:0}
 #splash .cable{transform-box:fill-box;transform-origin:50% 0}
@@ -299,6 +318,8 @@ header#top{position:fixed;top:0;left:0;right:0;height:52px;display:flex;align-it
 
 <div id="splash">
 <svg viewBox="0 -90 1280 1330" id="splashSvg">
+  <circle class="o1" cx="225" cy="613" r="311" fill="none" stroke="#808080" stroke-width="138"/>
+  <circle class="o2" cx="1955" cy="613" r="311" fill="none" stroke="#808080" stroke-width="138"/>
   <g class="m1"><path fill="#808080" transform="translate(7 8)" d="M0 0L417 579L830 0V827H693V430L417 816L138 429V827H0Z"/></g>
   <g class="m2"><path fill="#808080" transform="translate(7 385)" d="M0 0L417 579L830 0V827H693V430L417 816L138 429V827H0Z"/></g>
   <g id="workBlocks"></g>
@@ -1420,8 +1441,8 @@ function runSplash(){
   const A=(el,kf,o)=>{const a=el.animate(kf,{fill:'forwards',easing:'cubic-bezier(.45,0,.25,1)',...o});anims.push(a);return a};
   const hookAt=y=>`translate(${HX}px,${y}px)`,cab=y=>`scaleY(${Math.max(1,y+120)})`;
   hook.style.transform=hookAt(HY0);cable.style.transform=cab(HY0);
-  A(crane,[{opacity:0,transform:'translateX(420px)'},{opacity:1,transform:'none'}],{delay:350,duration:650,easing:'cubic-bezier(.2,.8,.2,1)'});
-  let t=900;
+  A(crane,[{opacity:0,transform:'translateX(420px)'},{opacity:1,transform:'none'}],{delay:1350,duration:650,easing:'cubic-bezier(.2,.8,.2,1)'});
+  let t=1900;
   TOP.forEach((top,i)=>{
     const f=fl[i],hy=top-62,start=HY0+62-top,ys=HY0;   // le haut de l'étage pend sous le crochet
     A(f,[{opacity:0,transform:`translateY(${start}px) rotate(-1.5deg)`},{opacity:1,transform:`translateY(${start}px) rotate(1.5deg)`}],{delay:t,duration:140,easing:'linear'});
