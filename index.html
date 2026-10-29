@@ -152,6 +152,7 @@ header#top{position:fixed;top:0;left:0;right:0;height:52px;display:flex;align-it
 .tki{display:inline-flex;align-items:center;gap:7px;color:var(--ink);text-decoration:none;cursor:pointer}.tki:hover{color:#fff;text-decoration:underline}
 .tki b{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:#111827;border-radius:3px;padding:1px 5px}
 .tksep{color:var(--line);margin:0 14px;font-style:normal}
+.tkrss{display:flex;flex-direction:column;gap:5px}.tkrr .tkn{flex:0 0 220px}.tkrr .tku{flex:1}
 body.tk #app,body.tk #rapport{bottom:30px}body.tk #toast{bottom:44px}
 @media (prefers-reduced-motion:reduce){#tkTrack{animation-duration:400s!important}}
 #rapport{position:fixed;top:52px;left:0;right:0;bottom:0;background:var(--bg);z-index:1500;display:none;flex-direction:column}
@@ -2035,10 +2036,10 @@ document.addEventListener('keydown',e=>{
 window.addEventListener('beforeunload',e=>{if(isDirty()){e.preventDefault();e.returnValue=''}});
 
 /* ============ Bandeau FLASH (bas d'écran) ============ */
-const TKCAT={alertes:['Alertes','#f472b6'],boamp:['Marchés publics','#34d399'],infos:['Infos','#60a5fa'],local:['Local','#fbbf24'],btp:['BTP','#fb923c']};
-const TKDEF={on:true,cats:{alertes:true,boamp:true,infos:true,local:true,btp:true},deps:'5,4',boampDays:7,feedUrl:'https://raw.githubusercontent.com/Mowiss/Momojob/flash/flash.json',speed:60};
+const TKCAT={alertes:['Alertes','#f472b6'],boamp:['Marchés publics','#34d399'],infos:['Infos','#60a5fa'],local:['Local','#fbbf24'],btp:['BTP','#fb923c'],perso:['Perso','#a78bfa']};
+const TKDEF={on:true,rss:[],cats:{alertes:true,boamp:true,infos:true,local:true,btp:true,perso:true},deps:'5,4',boampDays:7,feedUrl:'https://raw.githubusercontent.com/Mowiss/Momojob/flash/flash.json',speed:60};
 let TK=(()=>{let c={};try{c=JSON.parse(localStorage.getItem('momojob_flash')||'{}')}catch(e){}return {...TKDEF,...c,cats:{...TKDEF.cats,...(c.cats||{})}}})();
-const TKD={boamp:[],feed:[],feedAt:null,boampAt:null,err:{}};let TKSIG='';
+const TKD={boamp:[],feed:[],rss:[],feedAt:null,boampAt:null,err:{}};let TKSIG='';
 const saveTK=()=>{try{localStorage.setItem('momojob_flash',JSON.stringify(TK))}catch(e){}};
 function tkAlertes(){
   const out=[];if(!IDX)return out;
@@ -2065,11 +2066,34 @@ async function tkFeed(){
   try{const j=await jget(TK.feedUrl+(TK.feedUrl.includes('?')?'&':'?')+'t='+Math.floor(Date.now()/3e5));TKD.feed=(j.items||[]).map(x=>({cat:x.cat,t:(x.src?x.src+' : ':'')+x.title,href:x.link,date:x.date}));TKD.feedAt=j.generated?new Date(j.generated):new Date();delete TKD.err.feed}
   catch(e){TKD.err.feed='flux presse : '+netMsg(e)+' (la GitHub Action est-elle en place ?)'}
 }
+/* Flux RSS / Atom perso : lus directement par le navigateur, sinon via le relais public allorigins (beaucoup de sites bloquent la lecture directe) */
+async function rssText(u){
+  try{const r=await fetch(u,{cache:'no-store'});if(!r.ok)throw new Error('HTTP '+r.status);return await r.text()}
+  catch(e){const r=await fetch('https://api.allorigins.win/raw?url='+encodeURIComponent(u),{cache:'no-store'});if(!r.ok)throw new Error('HTTP '+r.status);return await r.text()}
+}
+function rssParse(txt){
+  const x=new DOMParser().parseFromString(txt,'text/xml');if(x.querySelector('parsererror'))throw new Error('ce n\u2019est pas un flux RSS/Atom');
+  const tx=(n,sel)=>{const e=n.querySelector(sel);return e?e.textContent.trim():''};
+  const title=tx(x,'channel > title')||tx(x,'feed > title');
+  const items=[...x.querySelectorAll('item, entry')].map(n=>{let href=tx(n,'link');if(!href){const l=n.querySelector('link[rel="alternate"],link');href=l?l.getAttribute('href')||'':''}
+    return {title:tx(n,'title').replace(/\s+/g,' '),href,date:tx(n,'pubDate')||tx(n,'updated')||tx(n,'published')||tx(n,'date')}}).filter(i=>i.title);
+  if(!items.length&&!title)throw new Error('ce n\u2019est pas un flux RSS/Atom');
+  return {title,items};
+}
+async function tkRss(){
+  const out=[];Object.keys(TKD.err).filter(k=>k.startsWith('rss')).forEach(k=>delete TKD.err[k]);
+  await Promise.all((TK.rss||[]).map(async(f,i)=>{if(!f.url)return;
+    try{const r=rssParse(await rssText(f.url));if(!f.nom&&r.title){f.nom=r.title;saveTK()}
+      r.items.slice(0,8).forEach(it=>out.push({cat:'perso',t:(f.nom||r.title||'Flux')+' : '+it.title,href:it.href,date:it.date,o:i}))}
+    catch(e){TKD.err['rss'+i]=`flux « ${f.nom||f.url} » : ${netMsg(e)}`}}));
+  TKD.rss=out.sort((a,b)=>a.o-b.o);TKD.rssAt=new Date();
+}
 function tkItems(){
   const L=[];
   if(TK.cats.alertes)tkAlertes().forEach(x=>L.push({cat:'alertes',...x}));
   if(TK.cats.boamp)TKD.boamp.slice(0,25).forEach(x=>L.push({cat:'boamp',...x}));
   ['infos','local','btp'].forEach(c=>{if(TK.cats[c])TKD.feed.filter(x=>x.cat===c).slice(0,12).forEach(x=>L.push(x))});
+  if(TK.cats.perso)TKD.rss.forEach(x=>L.push(x));
   return L;
 }
 function renderTicker(){
@@ -2108,7 +2132,7 @@ function tkMomoInit(){
   const blink=()=>setTimeout(()=>{if(!document.hidden){const l=box.querySelector('.eyes');l.classList.remove('blink');void l.getBBox();l.classList.add('blink')};blink()},2500+Math.random()*4000);blink();
 }
 function tkTalk(){const m=$('#tkMomo .mouth');if(!m)return;m.classList.remove('talk');void m.getBBox();m.classList.add('talk')}
-async function tkRefresh(){await Promise.all([TK.cats.boamp?tkBoamp():null,(TK.cats.infos||TK.cats.local||TK.cats.btp)?tkFeed():null]);TKSIG='';renderTicker()}
+async function tkRefresh(){await Promise.all([TK.cats.boamp?tkBoamp():null,(TK.cats.infos||TK.cats.local||TK.cats.btp)?tkFeed():null,TK.cats.perso&&(TK.rss||[]).length?tkRss():null]);TKSIG='';renderTicker()}
 function initTicker(){renderTicker();tkRefresh();setInterval(tkRefresh,10*60e3);setInterval(()=>renderTicker(),60e3)}
 $('#ticker').addEventListener('click',e=>{const a=e.target.closest('[data-tkopen]');if(a){e.preventDefault();openAffaire(a.dataset.tkopen)}});
 $('#tkCfg').onclick=async()=>{
@@ -2116,13 +2140,19 @@ $('#tkCfg').onclick=async()=>{
   body.innerHTML=`<div class="f"><span>Catégories affichées</span><div class="radios">${Object.entries(TKCAT).map(([k,[l,c]])=>`<label><input type="checkbox" data-tkc="${k}" ${TK.cats[k]?'checked':''}> <i style="display:inline-block;width:10px;height:10px;border-radius:3px;background:${c}"></i> ${l}</label>`).join('')}</div></div>
    <div class="fgrid" style="margin-top:12px"><label class="f"><span>BOAMP — départements (sans zéro : 5 = Hautes-Alpes, 4, 38, 26, 73…)</span><input id="tk-deps" value="${esc(TK.deps)}"></label><label class="f"><span>BOAMP — avis des N derniers jours (travaux)</span><input id="tk-days" type="number" min="1" max="60" value="${esc(TK.boampDays)}"></label>
    <label class="f c2"><span>Flux presse (fichier flash.json produit par la GitHub Action)</span><input id="tk-url" value="${esc(TK.feedUrl)}"></label>
+   <div class="f c2"><span>Mes flux RSS / Atom (catégorie « Perso ») — collez l\u2019adresse du flux, le nom est repris du flux s\u2019il est vide</span><div id="tk-rss" class="tkrss"></div><div class="row" style="margin-top:6px"><button class="btn sm" id="tk-rssadd">${ic('plus',14)} Ajouter un flux</button><label class="btn sm ghost" title="Importer une liste de flux (fichier OPML exporté d\u2019un lecteur RSS)">${ic('file',14)} Importer un OPML<input type="file" id="tk-opml" accept=".opml,.xml,text/xml" hidden></label></div></div>
    <label class="f"><span>Vitesse de défilement (px/s)</span><input id="tk-sp" type="number" min="20" max="200" value="${esc(TK.speed)}"></label>
    <label class="chk" style="align-self:end"><input type="checkbox" id="tk-on" ${TK.on?'checked':''}> <span>Afficher le bandeau</span></label></div>
    <p class="mute" style="margin-top:10px">${['Alertes : échéances J-3, remises dépassées, affaires à valider, factures en retard, jalons prévus ou en retard.',TKD.boampAt?'BOAMP mis à jour à '+TKD.boampAt.toLocaleTimeString('fr-FR'):'',TKD.feedAt?'Presse générée à '+TKD.feedAt.toLocaleTimeString('fr-FR'):'',...Object.values(TKD.err)].filter(Boolean).map(esc).join('<br>')}</p>`;
+  const rssRow=(f={})=>{const d=document.createElement('div');d.className='row tkrr';d.innerHTML=`<input class="tkn" placeholder="Nom (facultatif)" value="${esc(f.nom||'')}"><input class="tku" placeholder="https://exemple.fr/rss.xml" value="${esc(f.url||'')}"><button class="x" title="Retirer ce flux">${ic('trash',14)}</button>`;d.querySelector('.x').onclick=()=>d.remove();$('#tk-rss',body).append(d);return d};
+  (TK.rss||[]).forEach(rssRow);
+  $('#tk-rssadd',body).onclick=()=>rssRow().querySelector('.tku').focus();
+  $('#tk-opml',body).onchange=async e=>{const f=e.target.files[0];if(!f)return;try{const x=new DOMParser().parseFromString(await f.text(),'text/xml');const o=[...x.querySelectorAll('outline[xmlUrl]')];o.forEach(n=>rssRow({nom:n.getAttribute('title')||n.getAttribute('text')||'',url:n.getAttribute('xmlUrl')}));toast(o.length+' flux importé(s)',o.length?'ok':'err')}catch(x){toast('Fichier OPML illisible','err')}e.target.value=''};
   const ok=await modal({title:ic('send',18)+' Bandeau FLASH',body,wide:true,buttons:[{l:'Annuler'},{l:'Appliquer',v:true,cls:'pri'}]});
   if(!ok)return;
   $$('[data-tkc]',body).forEach(c=>TK.cats[c.dataset.tkc]=c.checked);
   TK.deps=$('#tk-deps',body).value;TK.boampDays=num($('#tk-days',body).value)||7;TK.feedUrl=$('#tk-url',body).value.trim();TK.speed=num($('#tk-sp',body).value)||60;TK.on=$('#tk-on',body).checked;
+  TK.rss=$$('.tkrr',body).map(r=>({nom:$('.tkn',r).value.trim(),url:$('.tku',r).value.trim()})).filter(f=>/^https?:\/\//i.test(f.url));
   saveTK();TKSIG='';renderTicker();tkRefresh();$('#tkMomo')?._setT?.();
 };
 
