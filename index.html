@@ -213,7 +213,7 @@ body.tk #app,body.tk #rapport{bottom:30px}body.tk #toast{bottom:44px}
 .qsec{margin-top:8px;padding-top:6px;border-top:1px solid #4b5563}.qsec h5{display:flex;align-items:center;gap:6px;margin:0 0 4px;font-size:12px;color:#e5e7eb;text-transform:uppercase;letter-spacing:.04em}
 .qrt{color:#9ca3af;font-size:11.5px;margin-top:5px}.qpl{margin:2px 0 0;padding-left:16px}.qpl li{margin:2px 0}.qpl b{color:#f3f4f6;font-weight:600}.qpl small{display:block;color:#9ca3af}.qrl{color:#e5e7eb;font-size:12px}
 .jprog{display:flex;align-items:center;gap:10px;margin-bottom:12px;color:var(--mute)}.jprog .bar{flex:1}
-.jal .cardh{gap:8px}.jal.st-ok{border-color:#065f46}.prel.over{border-color:var(--acc2);background:var(--acc-l)}.jal.over{border-color:var(--acc2);background:var(--acc-l)}
+.jal .cardh{gap:8px}.jal.st-ok{border-color:#065f46}.dlink{color:#93c5fd;text-decoration:none;display:inline-flex;align-items:center;gap:4px}.dlink:hover{color:#fff;text-decoration:underline}.prel.over{border-color:var(--acc2);background:var(--acc-l)}.jal.over{border-color:var(--acc2);background:var(--acc-l)}
 .jnum{width:26px;height:26px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;color:#111827;font-weight:800;font-size:12px;flex:none}
 .kpis{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
 .kpi{flex:1;min-width:150px;border:1px solid var(--pan2);background:var(--pan);border-radius:8px;padding:9px 12px;display:flex;flex-direction:column;gap:2px}
@@ -1330,8 +1330,8 @@ function tabRapport(){
      <div class="kv"><span>Société</span><b>${esc(d.client.societe||'—')}</b></div><div class="kv"><span>Contact</span><b>${esc(d.client.contact||'—')}</b></div><div class="kv"><span>Téléphone</span><b>${d.client.tel?`<a href="tel:${esc(d.client.tel)}">${esc(d.client.tel)}</a>`:'—'}</b></div><div class="kv"><span>Mail</span><b>${d.client.mail?`<a href="mailto:${esc(d.client.mail)}">${esc(d.client.mail)}</a>`:'—'}</b></div>${d.moe.societe?`<div class="kv"><span>Maître d'œuvre</span><b>${esc(d.moe.societe)}</b></div>`:''}</div>
    <div class="card"><div class="cardh"><b>${ic('folder')} Documents liés</b><span class="sp"></span><button class="btn sm" data-act="tab" data-t="docs">Ouvrir</button></div>
      <div class="chips" style="margin-bottom:6px">${Object.entries(DOC_ST).map(([k,[l,c]])=>`<span class="chip"><i style="background:${c}"></i>${l} : <b>${dc[k]}</b></span>`).join('')}</div>
-     ${a.docs.slice(0,8).map(x=>`<div class="kv"><span>${x.file?ic('clip',13)+' ':''}${esc(x.nom||'(sans nom)')}</span><b style="color:${DOC_ST[x.st][1]}">${DOC_ST[x.st][0]}</b></div>`).join('')||'<p class="mute">Aucun document suivi.</p>'}${a.docs.length>8?`<p class="mute">+ ${a.docs.length-8} autre(s)…</p>`:''}</div>
-   <div class="card"><div class="cardh"><b>${ic('flask')} Étude préliminaire</b></div>${a.prelim.items.map(i=>`<div class="kv"><span>${(i.files||[]).length?ic('clip',13)+' ':''}${esc(i.l)}${(i.files||[]).length>1?` (${i.files.length})`:''}</span><b style="color:${i.v==='oui'?'var(--ok)':i.v==='nc'?'var(--warn)':'inherit'}">${{oui:'Oui',non:'Non',nc:'À déterminer'}[i.v]||'—'}</b></div>${i.v==='oui'&&i.txt?`<div class="mute" style="font-size:12px;margin:2px 0 6px">${esc(i.txt.slice(0,180))}${i.txt.length>180?'…':''}</div>`:''}`).join('')}</div>
+     ${a.docs.slice(0,8).map((x,i)=>`<div class="kv"><span>${x.file?`<a href="#" class="dlink" data-act="dashDoc" data-i="${i}" title="Voir ${esc(x.file.name)}">${ic('eye',13)} ${esc(x.nom||x.file.name)}</a>`:esc(x.nom||'(sans nom)')}</span><b style="color:${DOC_ST[x.st][1]}">${DOC_ST[x.st][0]}</b></div>`).join('')||'<p class="mute">Aucun document suivi.</p>'}${a.docs.length>8?`<p class="mute">+ ${a.docs.length-8} autre(s)…</p>`:''}</div>
+   <div class="card"><div class="cardh"><b>${ic('flask')} Étude préliminaire</b></div>${a.prelim.items.map((i,n)=>`<div class="kv"><span>${esc(i.l)}${(i.files||[]).map((x,k)=>` <a href="#" class="dlink" data-act="prelView" data-i="${n}" data-k="${k}" title="Voir ${esc(x.file.name)}">${ic('eye',13)}${i.files.length>1?k+1:''}</a>`).join('')}</span><b style="color:${i.v==='oui'?'var(--ok)':i.v==='nc'?'var(--warn)':'inherit'}">${{oui:'Oui',non:'Non',nc:'À déterminer'}[i.v]||'—'}</b></div>${i.v==='oui'&&i.txt?`<div class="mute" style="font-size:12px;margin:2px 0 6px">${esc(i.txt.slice(0,180))}${i.txt.length>180?'…':''}</div>`:''}`).join('')}</div>
    <div class="card"><div class="cardh"><b>${ic('receipt')} Consultation des prix</b></div>${prixRet.map(c=>`<div class="kv"><span>${esc(c.l)} (${c.n} ligne${c.n>1?'s':''})</span><b>${c.t?eur(c.t):'—'}</b></div>`).join('')}<div class="kv"><span><b>Total retenu</b></span><b style="color:var(--acc)">${eur(prixRet.reduce((t,c)=>t+c.t,0))}</b></div></div>
    <div class="card"><div class="cardh"><b>${ic('euro')} Devis &amp; facturation</b><span class="sp"></span><button class="btn sm" data-act="tab" data-t="fact">Ouvrir</button></div>${(()=>{const T=factTotals(a),F=a.fact||[];return `<div class="kv"><span>Devis acceptés HT</span><b>${eur(T.acc)}</b></div><div class="kv"><span>Facturé HT</span><b>${eur(T.fac)}</b></div><div class="kv"><span>Reste à facturer HT</span><b>${eur(T.reste)}</b></div><div class="kv"><span>Encaissé / en attente TTC</span><b>${eur(T.paye)} / ${eur(T.du)}</b></div><div class="kv"><span>Pièces épinglées</span><b>${F.filter(x=>x.file).length}${T.late?` · <span style="color:#f87171">${T.late} en retard</span>`:''}</b></div>`})()}</div>
    <div class="card"><div class="cardh"><b>${ic('square')} Métré</b></div><div class="kv"><span>Projet Mapulator</span><b>${a.metre.map?esc(a.metre.map.name):'Non lié'}</b></div><div class="kv"><span>Postes</span><b>${a.metre.rows.length}</b></div><div class="kv"><span>Total métré HT</span><b style="color:var(--acc)">${eur(metreTotal(a))}</b></div></div>
@@ -1434,6 +1434,7 @@ function tabMetre(){
    <span id="mapuState">${m.map?'Projet de l’affaire : '+esc(m.map.name):'Aucun plan : Setup › Importer un plan'}</span>
    <button class="btn sm" data-act="mapImport" title="Remplacer le projet de l'affaire par un fichier .map">${ic('upload',14)}<span class="wl"> Importer</span> .map</button>
    <button class="btn sm" data-act="mapExport" title="Télécharger le projet .map de l'affaire" ${m.map?'':'disabled'}>${ic('download',14)}<span class="wl"> Exporter</span> .map</button>
+   <button class="btn sm danger" data-act="mapClear" title="Supprimer le plan du métré (pour retirer un seul plan : Setup › Plans › corbeille)" ${m.map?'':'disabled'}>${ic('trash',14)}<span class="wl"> Supprimer le plan</span></button>
    <button class="stepbtn ${done?'done':''}" data-act="stepDone" data-k="metre" title="Marquer l’étape Métré terminée">${done?ic('check',15)+' Terminée':ic('circle',15)+' Étape terminée'}</button></div>
   <div class="mbody">
    <div id="mapuWrap" style="position:absolute;inset:0;${MSUB==='plan'?'':'visibility:hidden'}"><div id="mapuLoad"><b style="font-size:15px;color:#93c5fd">Mapulator</b><span>Chargement du métré…</span></div><iframe id="mapuFrame" title="Mapulator" allowfullscreen></iframe></div>
@@ -1463,6 +1464,7 @@ function flushMapu(){
 }
 function applyMapuProject(a,json,qty){
   let ch=false;
+  if(json===null&&a.metre.map&&MAPU.armed){a.metre.map=null;ch=true}
   if(json&&(!a.metre.map||a.metre.map.text!==json)){a.metre.map={name:a.metre.map?.name||(a.deno.nom.replace(/[^\w\-]+/g,'_').slice(0,40)||'metre')+'.map',date:new Date().toISOString(),text:json};ch=true}
   const old=new Map(a.metre.rows.filter(r=>r.src==='map').map(r=>[r.k||r.des+'|'+r.u,r]));
   const rows=(qty||[]).map(q=>{const o=old.get(q.k)||old.get(q.des+'|'+q.u);return {k:q.k,des:q.des,u:q.u,q:q.q,ty:q.ty,pu:o?o.pu:'',src:'map'}});
@@ -1476,7 +1478,7 @@ window.addEventListener('message',e=>{
   const d=e.data;if(!d||d.mw!=='mapu')return;
   const fr=$('#mapuFrame');if(!fr||e.source!==fr.contentWindow)return;
   const a=CACHE.get(MAPU.aff);if(!a)return;
-  if(d.type==='ready'){MAPU.ready=true;$('#mapuLoad')?.remove();if(a.metre.map)mapuPost({type:'load',json:a.metre.map.text,name:a.metre.map.name})}
+  if(d.type==='ready'){MAPU.ready=true;MAPU.armed=false;clearTimeout(MAPU.armT);MAPU.armT=setTimeout(()=>{MAPU.armed=true},3500);$('#mapuLoad')?.remove();if(a.metre.map)mapuPost({type:'load',json:a.metre.map.text,name:a.metre.map.name})}
   else if(d.type==='project'){const ch=applyMapuProject(a,d.json,d.qty);mapuState(a.metre.map?`Plan enregistré dans l’affaire${ch?' à '+new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}):''} — ${a.metre.rows.filter(r=>r.src==='map').length} poste(s)`:'Aucun plan : Setup › Importer un plan','ok');const w=MAPU.waiters;MAPU.waiters=[];w.forEach(f=>f())}
   else if(d.type==='error')toast('Mapulator : '+d.msg,'err');
 });
@@ -1621,6 +1623,8 @@ const ACTS={
   prelAdd:()=>{A.prelim.items.push({l:'Autre étude',v:'',txt:'',files:[],custom:true});touch();renderRTab()},
   prelDel:async b=>{const it=A.prelim.items[+b.dataset.i];if(((it.files||[]).length||it.txt)&&!await appConfirm(`Supprimer l\u2019étude « ${esc(it.l)} »${(it.files||[]).length?' et ses '+it.files.length+' rapport(s)':''} ?`,'Supprimer'))return;A.prelim.items.splice(+b.dataset.i,1);touch();renderRTab();renderRNav()},
   prelAttach:async b=>{const fs=await pickFile('*/*',true);if(fs&&fs.length)prelAttachFiles(+b.dataset.i,[...fs])},
+  dashDoc:b=>openData(A.docs[+b.dataset.i].file,false),
+  mapClear:async()=>{if(!A.metre.map&&!A.metre.rows.some(r=>r.src==='map'))return toast('Aucun plan dans ce métré');if(!await appConfirm('Supprimer le plan Mapulator de l\u2019affaire (plans importés, tracés et postes issus du plan) ? Les postes manuels sont conservés.','Supprimer le plan'))return;A.metre.map=null;A.metre.rows=A.metre.rows.filter(r=>r.src!=='map');touch();renderRTab();renderRNav();toast('Plan du métré supprimé','ok')},
   prelView:b=>openData(A.prelim.items[+b.dataset.i].files[+b.dataset.k].file,false),
   prelDl:b=>openData(A.prelim.items[+b.dataset.i].files[+b.dataset.k].file,true),
   prelFDel:async b=>{if(!await appConfirm('Retirer ce rapport de l\u2019étude ?','Retirer'))return;A.prelim.items[+b.dataset.i].files.splice(+b.dataset.k,1);touch();renderRTab();renderRNav()},
