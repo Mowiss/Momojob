@@ -187,6 +187,10 @@ body.tk #app,body.tk #rapport{bottom:30px}body.tk #toast{bottom:44px}
 .seg button:hover{background:var(--pan2)}
 .seg button.on.oui{background:#059669;color:#fff} .seg button.on.non{background:var(--line);color:#fff} .seg button.on.nc{background:#b45309;color:#fff}
 .tscroll{overflow-x:auto}.ftbl{min-width:1080px}.ftbl select{min-width:104px}.ftbl input[data-b$='.objet']{min-width:130px}.ftbl td:first-child{min-width:170px}
+#na-mapw{position:relative;height:300px;border:1px solid var(--line);border-radius:8px;overflow:hidden}#na-map{position:absolute;inset:0;cursor:crosshair}
+#na-map .leaflet-control-zoom a{background:#1f2937;color:#e5e7eb;border-color:#4b5563}
+.na-bases{position:absolute;top:8px;right:8px;z-index:500;display:flex;background:#111827;border:1px solid #4b5563;border-radius:6px;overflow:hidden}
+.na-bases button{border:0;background:transparent;color:#d1d5db;font-size:11.5px;font-weight:600;padding:4px 9px;cursor:pointer}.na-bases button.on{background:var(--blue);color:#fff}
 .jprog{display:flex;align-items:center;gap:10px;margin-bottom:12px;color:var(--mute)}.jprog .bar{flex:1}
 .jal .cardh{gap:8px}.jal.st-ok{border-color:#065f46}.jal.over{border-color:var(--acc2);background:var(--acc-l)}
 .jnum{width:26px;height:26px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;color:#111827;font-weight:800;font-size:12px;flex:none}
@@ -879,6 +883,17 @@ const BASEDEF={plan:['Plan','https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
 const OVERDEF={cad:['Cadastre',IGN('CADASTRALPARCELS.PARCELLAIRE_EXPRESS','image/png','PCI%20vecteur'),{maxNativeZoom:19}],
   pente:['Pentes',IGN('GEOGRAPHICALGRIDSYSTEMS.SLOPES.MOUNTAIN'),{maxNativeZoom:17,opacity:.55}],
   com:['Communes',IGN('LIMITES_ADMINISTRATIVES_EXPRESS.LATEST'),{maxNativeZoom:18}]};
+function middlePan(map){
+  if(matchMedia('(pointer: coarse)').matches)return;
+  map.dragging.disable();
+  const el=map.getContainer();let pan=null;
+  el.addEventListener('mousedown',e=>{if(e.button!==1)return;e.preventDefault();pan={x:e.clientX,y:e.clientY};el.classList.add('panning')});
+  const mv=e=>{if(!pan)return;const dx=pan.x-e.clientX,dy=pan.y-e.clientY;if(dx||dy)map.panBy([dx,dy],{animate:false});pan={x:e.clientX,y:e.clientY}};
+  const up=e=>{if(pan&&e.button===1){pan=null;el.classList.remove('panning')}};
+  window.addEventListener('mousemove',mv);window.addEventListener('mouseup',up);
+  el.addEventListener('auxclick',e=>{if(e.button===1)e.preventDefault()});
+  map.on('unload',()=>{window.removeEventListener('mousemove',mv);window.removeEventListener('mouseup',up)});
+}
 function initMap(){
   MAP=L.map('map',{zoomControl:false,maxZoom:20}).setView(IDX.settings.center?IDX.settings.center.c:[44.559,6.079],IDX.settings.center?IDX.settings.center.z:10);
   for(const k in BASEDEF)BASES[k]=L.tileLayer(BASEDEF[k][1],{maxZoom:20,...BASEDEF[k][2]});
@@ -892,14 +907,7 @@ function initMap(){
   MAP.on('click',e=>{if(!MODE||MODE==='erase')mapClick(e)});MAP.on('dblclick',mapDbl);
   MAP.on('mousemove',e=>{if(DRAW&&DRAW.pts.length)drawTemp(e.latlng)});
   /* Déplacement de la carte au clic molette maintenu uniquement (comme MomoCAD) ; le clic gauche reste aux outils. Écrans tactiles : glisser au doigt conservé. */
-  if(!matchMedia('(pointer: coarse)').matches){
-    MAP.dragging.disable();
-    const el=MAP.getContainer();let pan=null;
-    el.addEventListener('mousedown',e=>{if(e.button!==1)return;e.preventDefault();pan={x:e.clientX,y:e.clientY};el.classList.add('panning')});
-    window.addEventListener('mousemove',e=>{if(!pan)return;const dx=pan.x-e.clientX,dy=pan.y-e.clientY;if(dx||dy)MAP.panBy([dx,dy],{animate:false});pan={x:e.clientX,y:e.clientY}});
-    window.addEventListener('mouseup',e=>{if(pan&&e.button===1){pan=null;el.classList.remove('panning')}});
-    el.addEventListener('auxclick',e=>{if(e.button===1)e.preventDefault()});
-  }
+  middlePan(MAP);
   MAP.on('contextmenu',e=>{if(DRAW){L.DomEvent.preventDefault(e.originalEvent);finishDraw()}});
 }
 function setBase(k){MAP.removeLayer(BASES[curBase]);curBase=k;BASES[k].addTo(MAP);BASES[k].bringToBack();renderTools()}
@@ -1094,14 +1102,31 @@ async function newAffaireDialog(p){
    <label class="f"><span>État</span><select id="na-etat">${Object.entries(ETATS).map(([k,v])=>`<option value="${k}">${v.l}</option>`).join('')}</select></label>
    <label class="f"><span>Échéance (remise de l'offre)</span><input id="na-ech" type="datetime-local"></label>
    <label class="f c2"><span>Adresse du chantier</span><div class="row"><input id="na-adr" value="${esc(p.adresse||'')}"><button class="btn" id="na-geo" type="button">${ic('pin',15)} Localiser</button></div></label>
+   <div class="f c2"><span>Emplacement du chantier — cliquez sur la carte pour pointer (déplacer la carte : clic molette, zoom : molette)</span><div id="na-mapw"><div id="na-map"></div><div class="na-bases"><button type="button" data-nb="plan" class="on">Plan</button><button type="button" data-nb="sat">Satellite</button><button type="button" data-nb="ign">IGN</button></div></div></div>
    <div class="mute c2" id="na-pos"></div>
    <label class="f c2"><span>Client (société) — proposé depuis le carnet</span><input id="na-cli" list="na-dl"></label></div>
    <datalist id="na-dl">${IDX.carnet.clients.map(c=>`<option value="${esc(c.societe||c.nom)}">${esc(c.nom||'')}</option>`).join('')}</datalist>`;
   const pos={lat:p.lat??null,lng:p.lng??null};
-  const showPos=()=>{$('#na-pos',body).textContent=pos.lat!=null?`Position : ${pos.lat.toFixed(5)}, ${pos.lng.toFixed(5)}`:'Position non définie — « Localiser » depuis l\u2019adresse, ou plus tard via « Placer sur la carte ».'};
+  let mm=null,mk=null,autoAdr=!p.adresse;
+  const showPos=()=>{$('#na-pos',body).textContent=pos.lat!=null?`Position : ${pos.lat.toFixed(5)}, ${pos.lng.toFixed(5)} — glissez le pin ou cliquez ailleurs pour corriger`:'Position non définie — cliquez sur la carte, ou saisissez l\u2019adresse puis « Localiser ».';
+    if(mm&&pos.lat!=null){const ic2=pinIcon({etat:$('#na-etat',body).value});if(mk){mk.setLatLng([pos.lat,pos.lng]);mk.setIcon(ic2)}else{mk=L.marker([pos.lat,pos.lng],{icon:ic2,draggable:true}).addTo(mm);mk.on('dragend',()=>{const ll=mk.getLatLng();setPos(ll.lat,ll.lng,true)})}}};
+  const setPos=(la,lo,rev)=>{pos.lat=la;pos.lng=lo;showPos();if(rev){const i=$('#na-adr',body);if(autoAdr||!i.value.trim())revGeo(la,lo).then(r=>{if(r&&(autoAdr||!i.value.trim())){i.value=r;autoAdr=true}})}};
+  $('#na-adr',body).addEventListener('input',()=>{autoAdr=false});
+  $('#na-etat',body).addEventListener('change',showPos);
+  const initMini=()=>{if(typeof L==='undefined'||mm)return;
+    const NB={plan:BASEDEF.plan,sat:BASEDEF.sat,ign:BASEDEF.ign};let cur=null;
+    mm=L.map($('#na-map',body),{zoomControl:true,attributionControl:false,maxZoom:20});
+    const setB=k=>{if(cur)mm.removeLayer(cur);cur=L.tileLayer(NB[k][1],{maxZoom:20,...NB[k][2]}).addTo(mm);$$('[data-nb]',body).forEach(b=>b.classList.toggle('on',b.dataset.nb===k))};
+    setB(curBase==='sat'||curBase==='ortho'?'sat':'plan');
+    $$('[data-nb]',body).forEach(b=>b.onclick=()=>setB(b.dataset.nb));
+    if(pos.lat!=null)mm.setView([pos.lat,pos.lng],16);else if(MAP)mm.setView(MAP.getCenter(),Math.min(Math.max(MAP.getZoom(),9),15));else mm.setView([44.559,6.079],10);
+    middlePan(mm);mm.doubleClickZoom.disable();
+    mm.on('click',e=>setPos(e.latlng.lat,e.latlng.lng,true));
+    showPos();setTimeout(()=>mm.invalidateSize(),60);
+  };
   showPos();
   if(pos.lat!=null&&!p.adresse)revGeo(pos.lat,pos.lng).then(r=>{const i=$('#na-adr',body);if(i&&!i.value)i.value=r});
-  $('#na-geo',body).onclick=async()=>{const q=$('#na-adr',body).value.trim();if(!q)return;const r=await geocode(q);if(r){pos.lat=r.lat;pos.lng=r.lng;showPos()}else toast('Adresse introuvable','err')};
+  $('#na-geo',body).onclick=async()=>{const q=$('#na-adr',body).value.trim();if(!q)return;const r=await geocode(q);if(r){setPos(r.lat,r.lng,false);if(mm)mm.setView([r.lat,r.lng],16)}else toast('Adresse introuvable','err')};
   let data=null;
   await modal({title:'Nouvelle affaire',body,buttons:[{l:'Annuler'},{l:"Créer l'affaire",cls:'pri',fn:async()=>{
     const nom=$('#na-nom',body).value.trim();if(!nom){toast('Donnez un nom à l\u2019affaire','err');return false}
@@ -1109,7 +1134,8 @@ async function newAffaireDialog(p){
     if(pos.lat==null&&adr){const r=await geocode(adr);if(r){pos.lat=r.lat;pos.lng=r.lng}}
     const cn=$('#na-cli',body).value.trim();const c=IDX.carnet.clients.find(x=>(x.societe||x.nom)===cn);
     data={nom,etat:$('#na-etat',body).value,echeance:$('#na-ech',body).value,adresse:adr,lat:pos.lat,lng:pos.lng,client:c?{societe:c.societe||cn,contact:c.nom||'',tel:c.tel||'',mail:c.mail||'',secteur:c.secteur||'',adresse:c.adresse||''}:{societe:cn}};
-  }}],onOpen:m=>$('#na-nom',m).focus()});
+  }}],wide:true,onOpen:m=>{$('#na-nom',m).focus();setTimeout(initMini,30)}});
+  if(mm){mm.remove();mm=null}
   if(!data)return;
   const a=newAff(data);CACHE.set(a.id,a);A=a;touch();
   if(a.deno.lat!=null){setView('map');MAP.setView([a.deno.lat,a.deno.lng],Math.max(MAP.getZoom(),14))}
