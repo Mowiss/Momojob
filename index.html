@@ -601,9 +601,19 @@ function pre(src,a,ctx){
 function dcPctOf(a,kind,i){const sch=DCS[kind];const v=kind==='dc4'?a.dc.dc4[i]:a.dc[kind];if(!v)return 0;const fs=sch.f.filter(f=>f[0]!=='S'&&f[2]!=='calc'&&f[2]!=='note');const n=fs.filter(f=>dcFilled(v[f[0]])).length;return Math.round(100*n/fs.length)}
 
 /* ============ IndexedDB ============ */
-const IDB={db:null,
-  open(){return new Promise((res,rej)=>{const r=indexedDB.open('MOMOwork',1);r.onupgradeneeded=()=>{const d=r.result;d.createObjectStore('kv');d.createObjectStore('aff')};r.onsuccess=()=>{this.db=r.result;res()};r.onerror=()=>rej(r.error)})},
-  tx(st,mode,fn){return new Promise((res,rej)=>{const t=this.db.transaction(st,mode);const r=fn(t.objectStore(st));t.oncomplete=()=>res(r&&r.result);t.onerror=()=>rej(t.error)})},
+/* IndexedDB : se reconnecte tout seul si le navigateur ferme la connexion (autre onglet, mise à jour, mise en veille…) */
+const IDB={db:null,opening:null,
+  open(){if(this.db)return Promise.resolve();if(this.opening)return this.opening;
+    this.opening=new Promise((res,rej)=>{const r=indexedDB.open('MOMOwork',1);
+      r.onupgradeneeded=()=>{const d=r.result;if(!d.objectStoreNames.contains('kv'))d.createObjectStore('kv');if(!d.objectStoreNames.contains('aff'))d.createObjectStore('aff')};
+      r.onsuccess=()=>{const d=r.result;this.db=d;d.onclose=()=>{if(this.db===d)this.db=null};d.onversionchange=()=>{d.close();if(this.db===d)this.db=null};res()};
+      r.onerror=()=>rej(r.error);r.onblocked=()=>rej(new Error('base du navigateur bloquée par un autre onglet'))}).finally(()=>{this.opening=null});
+    return this.opening},
+  async tx(st,mode,fn,retry=true){
+    try{await this.open();
+      return await new Promise((res,rej)=>{let t;try{t=this.db.transaction(st,mode)}catch(e){return rej(e)}const r=fn(t.objectStore(st));t.oncomplete=()=>res(r&&r.result);t.onerror=()=>rej(t.error);t.onabort=()=>rej(t.error||new Error('transaction annulée'))});
+    }catch(e){if(retry&&/closing|closed|InvalidState|not allowed|connection/i.test(String(e&&(e.name+' '+e.message)))){try{this.db&&this.db.close()}catch(x){}this.db=null;return this.tx(st,mode,fn,false)}throw e}
+  },
   get(st,k){return this.tx(st,'readonly',s=>s.get(k))},set(st,k,v){return this.tx(st,'readwrite',s=>s.put(v,k))},del(st,k){return this.tx(st,'readwrite',s=>s.delete(k))},clear(st){return this.tx(st,'readwrite',s=>s.clear())}};
 
 /* ============ Stockage : dossier .mmw (File System Access) ou navigateur ============ */
@@ -639,7 +649,7 @@ const Store={mode:'local',dir:null,granted:false,
   affDir(){return this.dir.getDirectoryHandle('affaires',{create:true})},
   async ensureTree(){for(const k in ETAT_DIR)await this.dir.getDirectoryHandle(ETAT_DIR[k],{create:true})},
   async loadIndex(){if(this.mode==='folder'&&this.granted){const n=await findIndex(this.dir);if(n){try{return await this.readFile(this.dir,n)}catch(e){}}}return await IDB.get('kv','index')},
-  async saveIndex(idx){await IDB.set('kv','index',idx);if(this.mode==='folder'){if(!this.granted)throw new Error('dossier non autorisé');await this.writeFile(this.dir,INDEX_FILE,idx)}},
+  async saveIndex(idx){if(this.mode==='folder'){if(!this.granted)throw new Error('dossier non autorisé');await this.writeFile(this.dir,INDEX_FILE,idx);try{await IDB.set('kv','index',idx)}catch(e){console.warn('cache navigateur',e)}}else await IDB.set('kv','index',idx)},
   async affFolder(fs,create){const ed=await this.dir.getDirectoryHandle(fs.etat,{create});return ed.getDirectoryHandle(fs.name,{create})},
   async loadAff(id){
     if(this.mode!=='folder')return await IDB.get('aff',id);
