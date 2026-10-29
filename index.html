@@ -672,6 +672,7 @@ const Store={mode:'local',dir:null,granted:false,
 
 /* ============ État ============ */
 let IDX=null;const CACHE=new Map(),DIRTY=new Set();
+let IDXV=0,NEXTAUTO=null,AUTOERR='';const DIRTYV=new Map();
 let IDXDIRTY=false,LASTSAVE=null,A=null,RTAB='rapport',DCTAB='dc1',VIEW='map',MODE=null,MOVEA=null,DRAWER=null,saving=false;
 const FILT={ao:0,location:true,etude:true,travaux:true,termine:true,sanssuite:true,q:''};
 function newIndex(){return {app:'MOMOwork',v:1,created:new Date().toISOString(),settings:{autoVal:5,autoUnit:'min',center:null},entreprise:{ca:[{},{},{}],eff:[{},{},{}]},carnet:{clients:[],st:[],fourn:[]},annots:[],affaires:[]}}
@@ -685,9 +686,9 @@ function newAff(p={}){return {app:'MOMOwork-affaire',v:1,id:uid('AF-'),created:n
 function normAff(a){const n=newAff();for(const k in n)if(a[k]==null)a[k]=n[k];for(const k in n.deno)if(a.deno[k]===undefined)a.deno[k]=n.deno[k];for(const k of ['dc1','dc2','dc3','dc4'])if(!a.dc[k])a.dc[k]=n.dc[k];return a}
 function summary(a){const d=a.deno;const st=STEPS.map(s=>stepState(a,s));const jn=(a.jalons||[]).find(j=>!j.valide&&j.prevu);return {id:a.id,mtf:a.mtf||null,fs:a.fs||null,late:(a.fact||[]).filter(factLate).length,jnext:jn?{t:jn.titre,d:daysTo(jn.prevu)}:null,nom:d.nom,ref:d.ref,etat:d.etat,client:d.client.societe,adresse:d.adresse,lat:d.lat,lng:d.lng,echeance:d.echeance,repondu:!!d.repondu,avalider:!!d.avalider,steps:{done:st.filter(x=>x==='done').length,total:STEPS.length},docs:{ok:a.docs.filter(x=>x.st!=='attendu').length,total:a.docs.length},updated:a.updated}}
 function syncEntry(a){const s=summary(a);const i=IDX.affaires.findIndex(x=>x.id===a.id);if(i<0)IDX.affaires.push(s);else IDX.affaires[i]=s}
-function touchAff(a){a.updated=new Date().toISOString();DIRTY.add(a.id);syncEntry(a);markIdx()}
+function touchAff(a){a.updated=new Date().toISOString();DIRTY.add(a.id);DIRTYV.set(a.id,(DIRTYV.get(a.id)||0)+1);syncEntry(a);markIdx()}
 function touch(){if(A)touchAff(A)}
-function markIdx(){IDXDIRTY=true;updSaveUI();schedRefresh()}
+function markIdx(){IDXDIRTY=true;IDXV++;updSaveUI();schedRefresh()}
 const schedRefresh=debounce(()=>{refreshMarkers();if(typeof renderTicker==='function')renderTicker();if(VIEW==='list')renderList();if(VIEW==='agenda')renderAgenda();renderCount()},350);
 const isDirty=()=>DIRTY.size>0||IDXDIRTY;
 function evictClean(){for(const k of [...CACHE.keys()])if(!DIRTY.has(k)&&(!A||A.id!==k)&&(!MOVEA||MOVEA.id!==k))CACHE.delete(k)}
@@ -698,12 +699,13 @@ async function saveAll(silent){
   if($('#mapuFrame'))await flushMapu();
   if(Store.mode==='folder'&&!Store.granted){if(silent){updSaveUI();return false}if(!await Store.ensure())return false}
   saving=true;
-  try{
+  try{updSaveUI();
     if(Store.mode==='folder')await Store.ensureTree();
-    for(const id of [...DIRTY]){const a=CACHE.get(id);if(a)await Store.saveAff(id,a);DIRTY.delete(id)}
+    const iv=IDXV;
+    for(const id of [...DIRTY]){const v=DIRTYV.get(id),a=CACHE.get(id);if(a)await Store.saveAff(id,a);if(DIRTYV.get(id)===v)DIRTY.delete(id)}
     if(Store.mode==='folder')for(const s of IDX.affaires.filter(x=>!x.fs)){try{let a=CACHE.get(s.id)||await Store.loadAff(s.id);if(a){normAff(a);await Store.saveAff(s.id,a)}}catch(e){}}
     if(Store.mode==='folder')try{await Store.dir.removeEntry('affaires')}catch(e){}   // ancien dossier vide
-    IDX.savedAt=new Date().toISOString();await Store.saveIndex(IDX);IDXDIRTY=false;LASTSAVE=new Date();evictClean();
+    IDX.savedAt=new Date().toISOString();await Store.saveIndex(IDX);if(IDXV===iv&&!DIRTY.size)IDXDIRTY=false;LASTSAVE=new Date();AUTOERR='';evictClean();
     return true;
   }catch(e){console.error(e);toast('Échec de la sauvegarde : '+e.message,'err');return false}
   finally{saving=false;updSaveUI()}
@@ -826,14 +828,22 @@ async function importMTF(o,fname){
   await saveAll(false);renderAll();fitAll();toast(`${n} affaire(s) MOMOtion Flow importée(s)`,'ok');
 }
 let AUTOT=null;
-function startAuto(){clearInterval(AUTOT);const s=IDX.settings;const ms=num(s.autoVal)*(s.autoUnit==='h'?36e5:6e4);if(ms>0)AUTOT=setInterval(()=>{if(isDirty())saveAll(true)},ms)}
+function startAuto(){clearInterval(AUTOT);const s=IDX.settings;const ms=num(s.autoVal)*(s.autoUnit==='h'?36e5:6e4);NEXTAUTO=ms>0?Date.now()+ms:null;if(ms>0)AUTOT=setInterval(async()=>{NEXTAUTO=Date.now()+ms;if(isDirty()){const ok=await saveAll(true);if(!ok)AUTOERR=Store.mode==='folder'&&!Store.granted?'dossier à reconnecter':'échec, voir le message d\u2019erreur'}updSaveUI()},ms);updSaveUI()}
 function updSaveUI(){
   const b=$('#diskBadge');b.className='';b.textContent='';
   if(Store.mode==='folder'&&!Store.granted){b.className='warn';b.textContent='!'}
   else if(isDirty()){b.className='dirty';b.textContent='•'}
   else if(Store.mode==='folder'){b.className='ok';b.innerHTML=ic('check',10)}
-  $('#saveState').textContent=isDirty()?'Modifications non enregistrées':LASTSAVE?'Enregistré à '+LASTSAVE.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}):'';
+  $('#saveState').textContent=saveLine(false);
   if($('#saveMenu').classList.contains('on'))renderSaveMenu();
+}
+function saveLine(long){
+  const hm=t=>new Date(t).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
+  if(saving)return 'Enregistrement en cours…';
+  if(Store.mode==='folder'&&!Store.granted)return long?'Sauvegarde auto en pause : le navigateur demande de reconnecter le dossier (menu Sauvegarde › Reconnecter).':'Dossier à reconnecter';
+  if(!isDirty())return LASTSAVE?(long?'Tout est enregistré (dernière sauvegarde à '+hm(LASTSAVE)+').':'Enregistré à '+hm(LASTSAVE)):(long?'Rien à enregistrer pour l\u2019instant.':'');
+  const nx=NEXTAUTO&&num(IDX.settings.autoVal)>0?(long?' La sauvegarde auto les enregistrera vers '+hm(NEXTAUTO)+' — ou Ctrl+S tout de suite.':' — auto vers '+hm(NEXTAUTO)):(long?' Sauvegarde auto désactivée : Ctrl+S pour enregistrer.':'');
+  return (long?'Modifié depuis '+(LASTSAVE?'la sauvegarde de '+hm(LASTSAVE):'l\u2019ouverture')+'.':'Modifications non enregistrées')+nx+(AUTOERR?(long?' Dernière tentative auto : '+AUTOERR+'.':' ('+AUTOERR+')'):'');
 }
 function renderSaveMenu(){
   const set=Store.mode==='folder',ok=set&&Store.granted,s=IDX.settings;
@@ -844,7 +854,7 @@ function renderSaveMenu(){
   <button class="mi" data-sm="open" ${!FSA?'disabled':''}>${ic('folderOpen',16)} Ouvrir / changer de dossier de sauvegarde…</button>
   <hr>
   <div class="mi row">${ic('timer',16)} Sauvegarde auto toutes les <input id="autoVal" type="number" min="0" step="1" value="${esc(s.autoVal)}"><select id="autoUnit"><option value="min" ${s.autoUnit==='min'?'selected':''}>min</option><option value="h" ${s.autoUnit==='h'?'selected':''}>h</option></select></div>
-  <div class="minote">${s.autoVal>0?'':'Désactivée (0). '}${LASTSAVE?'Dernière sauvegarde : '+LASTSAVE.toLocaleTimeString('fr-FR'):'Pas encore sauvegardé dans cette session'}${isDirty()?' — <b style="color:var(--warn)">modifications en attente</b>':''}</div>
+  <div class="minote">${esc(saveLine(true))}</div>
   <button class="mi" data-sm="now">${ic('save',16)} Enregistrer maintenant <span class="sp"></span><span class="mute">Ctrl+S</span></button>
   <button class="mi" data-sm="manual">${ic('download',16)} Sauvegarde manuelle<small>${set?'Crée un .mmw daté à côté de la sauvegarde auto':'Télécharge un .mmw complet daté'}</small></button>
   <hr>
