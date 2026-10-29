@@ -2064,8 +2064,10 @@ function tkAlertes(){
     if(s.etat==='ao'&&!s.repondu&&s.echeance){const j=daysTo(s.echeance);
       if(j!=null&&j<0&&j>=-7)out.push({t:`Échéance dépassée de ${-j} j — ${s.nom}`,id:s.id,w:3});
       else if(j!=null&&j<=3)out.push({t:`Remise ${j===0?'AUJOURD’HUI':'J-'+j} (${fmtD(s.echeance)}) — ${s.nom}`,id:s.id,w:j===0?3:2})}
-    if(s.avalider)out.push({t:`À valider — ${s.nom}`,id:s.id,w:1});
     if(s.late)out.push({t:`${s.late} facture(s) en retard — ${s.nom}`,id:s.id,w:2});
+    /* Offre déjà remise, affaire terminée ou sans suite : plus d'alerte (sauf factures en retard) */
+    if((s.etat==='ao'&&s.repondu)||s.etat==='termine'||s.etat==='sanssuite')return;
+    if(s.avalider)out.push({t:`À valider — ${s.nom}`,id:s.id,w:1});
     if(s.jnext&&s.jnext.d!=null&&s.jnext.d<=2)out.push({t:`Jalon « ${s.jnext.t} » ${s.jnext.d<0?'en retard':s.jnext.d===0?'prévu aujourd’hui':'prévu J-'+s.jnext.d} — ${s.nom}`,id:s.id,w:s.jnext.d<0?2:1});
   });
   return out.sort((a,b)=>b.w-a.w);
