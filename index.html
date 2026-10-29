@@ -2067,6 +2067,8 @@ async function tkFeed(){
   catch(e){TKD.err.feed='flux presse : '+netMsg(e)+' (la GitHub Action est-elle en place ?)'}
 }
 /* Flux RSS / Atom perso : lus directement par le navigateur, sinon via le relais public allorigins (beaucoup de sites bloquent la lecture directe) */
+/* Retire les paramètres de pistage (_gl, utm_…, gclid, fbclid…) collés par les sites */
+function cleanUrl(u){try{const x=new URL(u);[...x.searchParams.keys()].forEach(k=>{if(/^(_gl|_ga|_gac|utm_.*|gclid|fbclid|mc_cid|mc_eid|msclkid|yclid|igshid)$/i.test(k))x.searchParams.delete(k)});return x.toString()}catch(e){return u}}
 async function rssText(u){
   try{const r=await fetch(u,{cache:'no-store'});if(!r.ok)throw new Error('HTTP '+r.status);return await r.text()}
   catch(e){const r=await fetch('https://api.allorigins.win/raw?url='+encodeURIComponent(u),{cache:'no-store'});if(!r.ok)throw new Error('HTTP '+r.status);return await r.text()}
@@ -2152,7 +2154,7 @@ $('#tkCfg').onclick=async()=>{
   if(!ok)return;
   $$('[data-tkc]',body).forEach(c=>TK.cats[c.dataset.tkc]=c.checked);
   TK.deps=$('#tk-deps',body).value;TK.boampDays=num($('#tk-days',body).value)||7;TK.feedUrl=$('#tk-url',body).value.trim();TK.speed=num($('#tk-sp',body).value)||60;TK.on=$('#tk-on',body).checked;
-  TK.rss=$$('.tkrr',body).map(r=>({nom:$('.tkn',r).value.trim(),url:$('.tku',r).value.trim()})).filter(f=>/^https?:\/\//i.test(f.url));
+  TK.rss=$$('.tkrr',body).map(r=>({nom:$('.tkn',r).value.trim(),url:cleanUrl($('.tku',r).value.trim())})).filter(f=>/^https?:\/\//i.test(f.url));
   saveTK();TKSIG='';renderTicker();tkRefresh();$('#tkMomo')?._setT?.();
 };
 
