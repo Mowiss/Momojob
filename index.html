@@ -194,7 +194,10 @@ body.tk #app,body.tk #rapport{bottom:30px}body.tk #toast{bottom:44px}
 .qpop .leaflet-popup-content{margin:10px 12px}.qp{display:flex;flex-direction:column;gap:3px}
 .qr{display:flex;align-items:center;gap:8px;border-bottom:1px dashed #374151;padding:3px 0}.qr span{color:#9ca3af;min-width:84px;font-size:11.5px}.qr b{flex:1;color:#f3f4f6;font-weight:600}
 .qwarn{display:flex;align-items:center;gap:5px;color:#fbbf24;font-size:11.5px;margin-top:2px}
-.qbtns{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.qbtns{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}.qbtns a.btn{text-decoration:none}
+.qpop .leaflet-popup-content{max-height:62vh;overflow:auto}
+.qsec{margin-top:8px;padding-top:6px;border-top:1px solid #4b5563}.qsec h5{display:flex;align-items:center;gap:6px;margin:0 0 4px;font-size:12px;color:#e5e7eb;text-transform:uppercase;letter-spacing:.04em}
+.qrt{color:#9ca3af;font-size:11.5px;margin-top:5px}.qpl{margin:2px 0 0;padding-left:16px}.qpl li{margin:2px 0}.qpl b{color:#f3f4f6;font-weight:600}.qpl small{display:block;color:#9ca3af}.qrl{color:#e5e7eb;font-size:12px}
 .jprog{display:flex;align-items:center;gap:10px;margin-bottom:12px;color:var(--mute)}.jprog .bar{flex:1}
 .jal .cardh{gap:8px}.jal.st-ok{border-color:#065f46}.jal.over{border-color:var(--acc2);background:var(--acc-l)}
 .jnum{width:26px;height:26px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;color:#111827;font-weight:800;font-size:12px;flex:none}
@@ -528,6 +531,7 @@ const IC={
  sunCloud:'<path d="M12 2v2M4.9 4.9l1.4 1.4M20 12h2M19.1 4.9l-1.4 1.4M15.9 13.1A4 4 0 1 0 8 11.5"/><path d="M13 22H7a5 5 0 1 1 4.9-6H13a3 3 0 0 1 0 6z"/>',
  cloud:'<path d="M17.5 19H8a6 6 0 1 1 5.7-8h1.8a4.5 4.5 0 1 1 2 8z"/>',
  fog:'<path d="M4 14.9A7 7 0 1 1 15.7 8h1.8a4.5 4.5 0 0 1 2.5 8.2"/><path d="M16 17H7M17 21H9"/>',
+ ppr:'<path d="M3 11l9-7 9 7"/><path d="M5 10v4M19 10v4"/><path d="M2 18c2 0 2-1.5 4-1.5s2 1.5 4 1.5 2-1.5 4-1.5 2 1.5 4 1.5 2-1.5 4-1.5"/><path d="M2 22c2 0 2-1.5 4-1.5s2 1.5 4 1.5 2-1.5 4-1.5 2 1.5 4 1.5 2-1.5 4-1.5"/>',
  rain:'<path d="M4 14.9A7 7 0 1 1 15.7 8h1.8a4.5 4.5 0 0 1 2.5 8.2"/><path d="M16 14v6M8 14v6M12 16v6"/>',
  snow:'<path d="M4 14.9A7 7 0 1 1 15.7 8h1.8a4.5 4.5 0 0 1 2.5 8.2"/><path d="M8 15h.01M8 19h.01M12 17h.01M12 21h.01M16 15h.01M16 19h.01"/>',
  storm:'<path d="M6 16.3A7 7 0 1 1 15.7 8h1.8a4.5 4.5 0 0 1 .5 9"/><path d="M13 11l-4 6h6l-4 6"/>'
@@ -888,14 +892,18 @@ $('#btnDisk').onclick=e=>{e.stopPropagation();const m=$('#saveMenu');if(m.classL
 document.addEventListener('click',e=>{if(!e.target.closest('#saveMenu')&&!e.target.closest('#btnDisk'))closeMenu()});
 
 /* ============ Carte ============ */
-let MAP,MARKERS,ANNOT,TEMP,BASES={},OVERS={},curBase='plan';const OVERON={};
+let MAP,MARKERS,ANNOT,TEMP,BASES={},OVERS={},curBase='ortho';const OVERON={};
 const IGN=(layer,fmt='image/png',style='normal')=>`https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=${layer}&STYLE=${style}&TILEMATRIXSET=PM&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&FORMAT=${fmt}`;
 const BASEDEF={plan:['Plan','https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxNativeZoom:19,attribution:'© OpenStreetMap'}],
   sat:['Sat.','https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxNativeZoom:19,attribution:'© Esri'}],
   topo:['Topo','https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',{maxNativeZoom:17,attribution:'© OpenTopoMap'}],
   ortho:['Ortho',IGN('ORTHOIMAGERY.ORTHOPHOTOS','image/jpeg'),{maxNativeZoom:19,attribution:'© IGN'}],
   ign:['IGN',IGN('GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2'),{maxNativeZoom:19,attribution:'© IGN'}]};
-const OVERDEF={cad:['Cadastre',IGN('CADASTRALPARCELS.PARCELLAIRE_EXPRESS','image/png','PCI%20vecteur'),{maxNativeZoom:19}],
+const GR='https://www.georisques.gouv.fr';
+const PPR_ZONES='PPRN_ZONE_INOND_FXX,PPRN_ZONE_SUBMAR_FXX,PPRN_ZONE_MVT_FXX,PPRN_ZONE_CAV_FXX_01,PPRN_ZONE_CAV_FXX_02,PPRN_ZONE_AVALANCHE_FXX,PPRN_ZONE_FEU_FXX,PPRN_ZONE_SEISME_FXX,PPRT_ZONE_RISQIND_FXX';
+const PPR_COMM='PPRN_COMMUNE_GASPAR,PPRT_COMMUNE_GASPAR';
+const OVERDEF={ppr:['Zonages PPR',GR+'/services',{wms:{layers:PPR_ZONES,styles:'',format:'image/png',transparent:true,version:'1.3.0',opacity:.6,zIndex:350,attribution:'PPR © Géorisques'}}],
+  cad:['Cadastre',IGN('CADASTRALPARCELS.PARCELLAIRE_EXPRESS','image/png','PCI%20vecteur'),{maxNativeZoom:19}],
   pente:['Pentes',IGN('GEOGRAPHICALGRIDSYSTEMS.SLOPES.MOUNTAIN'),{maxNativeZoom:17,opacity:.55}],
   com:['Communes',IGN('LIMITES_ADMINISTRATIVES_EXPRESS.LATEST'),{maxNativeZoom:18}]};
 function middlePan(map){
@@ -912,8 +920,8 @@ function middlePan(map){
 function initMap(){
   MAP=L.map('map',{zoomControl:false,maxZoom:20}).setView(IDX.settings.center?IDX.settings.center.c:[44.559,6.079],IDX.settings.center?IDX.settings.center.z:10);
   for(const k in BASEDEF)BASES[k]=L.tileLayer(BASEDEF[k][1],{maxZoom:20,...BASEDEF[k][2]});
-  for(const k in OVERDEF)OVERS[k]=L.tileLayer(OVERDEF[k][1],{maxZoom:20,...OVERDEF[k][2]});
-  BASES.plan.addTo(MAP);
+  for(const k in OVERDEF)OVERS[k]=OVERDEF[k][2].wms?L.tileLayer.wms(OVERDEF[k][1],{maxZoom:20,...OVERDEF[k][2].wms}):L.tileLayer(OVERDEF[k][1],{maxZoom:20,...OVERDEF[k][2]});
+  BASES[curBase].addTo(MAP);
   ANNOT=L.layerGroup().addTo(MAP);TEMP=L.layerGroup().addTo(MAP);MARKERS=L.layerGroup().addTo(MAP);
   /* Un « clic » d'outil = appui + relâché du clic gauche (la carte ne se déplace plus qu'au clic molette, donc un petit glissement compte comme un clic) */
   let PD=null;
@@ -989,7 +997,7 @@ async function liveRadar(){
   }catch(e){liveStatus('radar','Radar : '+netMsg(e),true)}
 }
 /* ============ Interroger un lieu — Base Adresse Nationale (Géoplateforme IGN, sans clé) ============ */
-let QMK=null,QLAST=null,QPOP=null;
+let QMK=null,QLAST=null,QPOP=null,QPAR=null,QSEQ=0;
 async function banReverse(lat,lng,index){
   const qs=`lon=${lng}&lat=${lat}&limit=1`+(index?`&index=${index}`:'');
   const urls=[`https://data.geopf.fr/geocodage/reverse?${qs}`].concat(index==='parcel'?[]:[`https://api-adresse.data.gouv.fr/reverse/?lon=${lng}&lat=${lat}&limit=1`]);
@@ -1000,23 +1008,83 @@ async function queryAt(ll){
   if(QMK)MAP.removeLayer(QMK);
   QMK=L.circleMarker([lat,lng],{radius:6,color:'#fff',weight:2,fillColor:'#34d399',fillOpacity:1,interactive:false}).addTo(MAP);
   if(QPOP)MAP.closePopup(QPOP);
-  const pop=QPOP=L.popup({maxWidth:340,minWidth:260,className:'qpop',autoPanPadding:[40,40],autoClose:false,closeOnClick:false}).setLatLng([lat,lng]).setContent('<div class="qp"><span class="mute">Recherche dans la Base Adresse Nationale…</span></div>').openOn(MAP);
-  pop.on('remove',()=>{if(QMK){MAP.removeLayer(QMK);QMK=null}});
+  const pop=QPOP=L.popup({maxWidth:340,minWidth:260,className:'qpop',maxHeight:520,autoPanPaddingTopLeft:[40,110],autoPanPaddingBottomRight:[40,50],autoClose:false,closeOnClick:false}).setLatLng([lat,lng]).setContent('<div class="qp"><span class="mute">Recherche dans la Base Adresse Nationale…</span></div>').openOn(MAP);
+  const seq=++QSEQ;
+  pop.on('remove',()=>{if(QMK){MAP.removeLayer(QMK);QMK=null}if(QPAR&&seq===QSEQ){MAP.removeLayer(QPAR);QPAR=null}});
+  if(QPAR){MAP.removeLayer(QPAR);QPAR=null}
   const [ad,pa]=await Promise.allSettled([banReverse(lat,lng,'address'),banReverse(lat,lng,'parcel')]);
   const f=ad.status==='fulfilled'?ad.value:null,P=f?f.properties:{},pp=pa.status==='fulfilled'&&pa.value?pa.value.properties:null;
-  if(ad.status==='rejected'){pop.setContent(`<div class="qp"><b>Base Adresse Nationale injoignable</b><div class="mute">${esc(netMsg(ad.reason))}</div>${qBtns(lat,lng,'')}</div>`);return}
+  const more=`<div class="qsec" id="qpar"><h5>${ic('parcel',13)} Parcelle cadastrale</h5><span class="mute">Recherche (API Carto IGN)…</span></div><div class="qsec" id="qrisk"><h5>${ic('ppr',13)} Risques — PPR</h5><span class="mute">Recherche (Géorisques)…</span></div>`;
+  if(ad.status==='rejected'){pop.setContent(`<div class="qp"><b>Base Adresse Nationale injoignable</b><div class="mute">${esc(netMsg(ad.reason))}</div>${more}${qBtns(lat,lng,'')}</div>`);qMore(pop,seq,lat,lng,'');return}
   const dist=P.distance!=null?Math.round(P.distance):(f?Math.round(MAP.distance([lat,lng],[f.geometry.coordinates[1],f.geometry.coordinates[0]])):null);
   const voie=[P.housenumber,P.street||P.name].filter(Boolean).join(' ');
   const parc=pp?[pp.section&&('section '+pp.section),pp.number&&('n° '+pp.number)].filter(Boolean).join(' ')||pp.id||'':'';
   QLAST={lat,lng,label:P.label||'',voie,commune:P.city||P.municipality||'',cp:P.postcode||'',insee:P.citycode||pp?.municipalitycode||'',parc,parcId:pp?.id||''};
   const row=(k,v,copy)=>`<div class="qr"><span>${k}</span><b>${esc(v||'—')}</b>${copy&&v?`<button class="x" data-qcopy="${esc(v)}" title="Copier">${ic('file',13)}</button>`:''}</div>`;
   pop.setContent(`<div class="qp">${f?`${row('Adresse',voie||P.label,true)}${row('Commune',QLAST.commune)}${row('Code postal',QLAST.cp,true)}${row('Code INSEE',QLAST.insee,true)}${parc?row('Parcelle',parc+(pp?.id?' ('+pp.id+')':''),true):''}${dist!=null&&dist>25?`<div class="qwarn">${ic('warn',13)} Adresse la plus proche, à ${dist<1000?dist+' m':(dist/1000).toFixed(1)+' km'} du point</div>`:''}`:'<div class="mute">Aucune adresse trouvée près de ce point.</div>'}
-    <div class="qr"><span>Coordonnées</span><b>${lat.toFixed(5)}, ${lng.toFixed(5)}</b><button class="x" data-qcopy="${lat.toFixed(6)}, ${lng.toFixed(6)}" title="Copier">${ic('file',13)}</button></div>${qBtns(lat,lng,P.label||'')}</div>`);
+    <div class="qr"><span>Coordonnées</span><b>${lat.toFixed(5)}, ${lng.toFixed(5)}</b><button class="x" data-qcopy="${lat.toFixed(6)}, ${lng.toFixed(6)}" title="Copier">${ic('file',13)}</button></div>${more}${qBtns(lat,lng,P.label||'')}</div>`);
+  qMore(pop,seq,lat,lng,QLAST.insee);
+}
+/* ---- Parcelle (API Carto cadastre IGN) et risques (Géorisques : PPR commune + zonage réglementaire au point) ---- */
+const grTok=()=>{try{return localStorage.getItem('momojob_grtoken')||''}catch(e){return ''}};
+async function grApi(path){const t=grTok();const r=await fetch(GR+'/api/v1/'+path,{headers:t?{'X-API-Key':t}:{}});if(r.status===401||r.status===403){const e=new Error('clé API Géorisques requise');e.auth=1;throw e}if(!r.ok)throw new Error('HTTP '+r.status);return r.json()}
+async function wmsInfo(lat,lng,layers){
+  const p=L.CRS.EPSG3857.project(L.latLng(lat,lng)),d=8;
+  const j=await jget(`${GR}/services?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetFeatureInfo&LAYERS=${layers}&QUERY_LAYERS=${layers}&STYLES=&CRS=EPSG:3857&BBOX=${p.x-d},${p.y-d},${p.x+d},${p.y+d}&WIDTH=17&HEIGHT=17&I=8&J=8&INFO_FORMAT=application/json&FEATURE_COUNT=40`);
+  return (j.features||[]).map(f=>f.properties||{});
+}
+async function cadParcel(lat,lng){const g=encodeURIComponent(JSON.stringify({type:'Point',coordinates:[lng,lat]}));const j=await jget(`https://apicarto.ign.fr/api/cadastre/parcelle?geom=${g}&_limit=1`);return (j.features||[])[0]||null}
+const outerRings=g=>!g?[]:g.type==='Polygon'?[g.coordinates[0]]:g.type==='MultiPolygon'?g.coordinates.map(p=>p[0]):[];
+function qSet(pop,seq,id,html){if(seq!==QSEQ)return;const el=pop.getElement&&pop.getElement();const n=el&&el.querySelector('#'+id);if(n){n.innerHTML=html;const q=el.querySelector('.qp');if(q)pop.setContent(q);else pop.update()}}
+/* Lecture tolérante des attributs (les noms de champs varient selon les couches Géorisques) */
+const PPRK=['nom_ppr','nom_plan','libelle_ppr','lib_ppr','nom','libelle','libelle_risque_long','lib_risque','risque','alea','etat','etat_ppr','etat_procedure','date_approbation','date_appro','dateappro','date_prescription','dateprescr','code_zone_reglement','codezone','libelle_zone','typereg','type_reglement_standardise','libelle_reglement_standardise'];
+function pprLine(p){
+  const ks=Object.keys(p).filter(k=>p[k]!=null&&p[k]!==''&&typeof p[k]!=='object'&&!/geom|^id$|^gid$|^fid$|objectid|shape|bbox/i.test(k));
+  let pick=PPRK.map(w=>ks.find(k=>k.toLowerCase()===w)).filter(Boolean);
+  if(!pick.length)pick=ks.slice(0,4);
+  const v=k=>{let x=String(p[k]);if(/^\d{4}-\d{2}-\d{2}/.test(x))x=fmtD(x.slice(0,10));return x};
+  const main=pick.filter(k=>!/date|etat|code_zone|codezone|typereg|type_regl/i.test(k)).slice(0,2).map(v).join(' — ');
+  const sub=pick.filter(k=>/date|etat|code_zone|codezone|typereg|type_regl/i.test(k)).map(k=>(/date_?appro|dateappro/i.test(k)?'approuvé le ':/prescr/i.test(k)?'prescrit le ':/zone/i.test(k)?'zone ':'')+v(k)).join(' · ');
+  return {main:main||sub||'PPR',sub:main?sub:''};
+}
+const uniqLines=a=>{const m=new Map();a.map(pprLine).forEach(l=>m.set(l.main+'|'+l.sub,l));return [...m.values()]};
+const lineHTML=l=>`<li><b>${esc(l.main)}</b>${l.sub?`<small>${esc(l.sub)}</small>`:''}</li>`;
+async function qMore(pop,seq,lat,lng,insee){
+  /* 1) Parcelle : contenance + contour dessiné sur la carte */
+  cadParcel(lat,lng).then(f=>{
+    if(seq!==QSEQ)return;
+    if(!f){qSet(pop,seq,'qpar','<span class="mute">Aucune parcelle cadastrale à cet endroit (domaine public, voirie…).</span>');return}
+    const p=f.properties||{},rings=outerRings(f.geometry),pts=(rings[0]||[]).map(c=>[c[1],c[0]]);
+    const calc=rings.reduce((a,r)=>a+geoArea(r.map(c=>[c[1],c[0]])),0),per=pts.length?lenOf(pts,true):0;
+    if(QPAR)MAP.removeLayer(QPAR);
+    QPAR=L.geoJSON(f,{interactive:false,style:{color:'#bef264',weight:2.5,dashArray:'6 4',fillColor:'#bef264',fillOpacity:.14}}).addTo(MAP);
+    const idu=p.idu||[p.code_dep,p.code_com,p.com_abs,p.section,p.numero].filter(Boolean).join('')||'';
+    const ref=[p.section&&'section '+p.section,p.numero&&'n° '+String(p.numero).replace(/^0+/,''),p.feuille&&'feuille '+p.feuille].filter(Boolean).join(' · ');
+    if(QLAST){QLAST.parcId=idu||QLAST.parcId;QLAST.parcSurf=p.contenance||Math.round(calc);QLAST.parcPts=pts}
+    const r=(k,v,c)=>`<div class="qr"><span>${k}</span><b>${esc(v)}</b>${c?`<button class="x" data-qcopy="${esc(c)}" title="Copier">${ic('file',13)}</button>`:''}</div>`;
+    qSet(pop,seq,'qpar',`<h5>${ic('parcel',13)} Parcelle cadastrale</h5>${ref?r('Référence',ref):''}${idu?r('Identifiant',idu,idu):''}${p.contenance!=null?r('Contenance',(+p.contenance).toLocaleString('fr-FR')+' m²',String(p.contenance)):''}${r('Surface tracée',Math.round(calc).toLocaleString('fr-FR')+' m²')}${per?r('Périmètre',fmtLen(per)):''}${p.nom_com?r('Commune',p.nom_com):''}
+      <div class="qbtns"><button class="btn sm" data-qparmeas="1" title="Ajoute le contour de la parcelle aux mesures de la carte">${ic('area',13)} Ajouter en mesure d\u2019aire</button><button class="btn sm" data-qparfit="1">${ic('target',13)} Cadrer</button></div>`);
+  }).catch(e=>qSet(pop,seq,'qpar',`<h5>${ic('parcel',13)} Parcelle cadastrale</h5><span class="mute">API Carto ${esc(netMsg(e))}</span>`));
+  /* 2) Risques : PPR de la commune et zonage réglementaire au point */
+  const rep=`${GR}/mes-risques/connaitre-les-risques-pres-de-chez-moi/rapport2?form-adresse=true&isCadastre=false&lon=${lng}&lat=${lat}${insee?'&codeInsee='+insee:''}`;
+  const [com,zon,gas]=await Promise.allSettled([wmsInfo(lat,lng,PPR_COMM),wmsInfo(lat,lng,PPR_ZONES),insee?grApi(`gaspar/risques?code_insee=${insee}`):Promise.reject(new Error('code INSEE inconnu'))]);
+  if(seq!==QSEQ)return;
+  let h=`<h5>${ic('ppr',13)} Risques — PPR</h5>`;
+  const blk=(t,res,empty)=>{if(res.status==='rejected')return `<div class="qrt">${t}</div><div class="mute">indisponible — ${esc(netMsg(res.reason))}</div>`;const L2=uniqLines(res.value);return `<div class="qrt">${t}</div>${L2.length?`<ul class="qpl">${L2.map(lineHTML).join('')}</ul>`:`<div class="mute">${empty}</div>`}`};
+  h+=blk('PPR de la commune',com,'Aucun PPR recensé pour la commune.');
+  h+=blk('Zonage réglementaire au point',zon,'Point hors zonage réglementaire PPR (ou zonage non numérisé).');
+  if(gas.status==='fulfilled'){const d=(gas.value.data||[])[0];const rl=(d&&d.risques_detail||[]).map(x=>x.libelle_risque_long).filter(Boolean);if(rl.length)h+=`<div class="qrt">Risques recensés (GASPAR)</div><div class="qrl">${rl.map(esc).join(' · ')}</div>`}
+  else if(gas.reason&&gas.reason.auth)h+=`<div class="mute">Liste GASPAR : ${grTok()?'clé Géorisques refusée':'une clé Géorisques gratuite est nécessaire'} — Paramètres.</div>`;
+  h+=`<div class="qbtns"><a class="btn sm" href="${rep}" target="_blank" rel="noopener">${ic('ppr',13)} Rapport Géorisques</a>${OVERON.ppr?'':`<button class="btn sm" data-qppr="1">Afficher les zonages</button>`}</div>`;
+  qSet(pop,seq,'qrisk',h);
 }
 const qBtns=(lat,lng,label)=>`<div class="qbtns"><button class="btn sm pri" data-qcreate="1">${ic('plus',14)} Créer une affaire ici</button>${label?`<button class="btn sm" data-qcopy="${esc(label)}">${ic('file',13)} Copier l\u2019adresse</button>`:''}</div>`;
 document.addEventListener('click',async e=>{
   const c=e.target.closest('[data-qcreate]');if(c){e.preventDefault();const q=QLAST||{};if(QPOP)MAP.closePopup(QPOP);setMode(null);
     await newAffaireDialog({lat:q.lat,lng:q.lng,adresse:q.label||'',insee:q.insee,parc:q.parcId||q.parc});return}
+  if(e.target.closest('[data-qparmeas]')){e.preventDefault();const q=QLAST||{};if(q.parcPts&&q.parcPts.length>=3){IDX.annots.push({id:uid('M-'),type:'area',pts:q.parcPts.slice(0,-1)});markIdx();renderAnnots();toast('Parcelle ajoutée aux mesures : '+measLabel('area',q.parcPts.slice(0,-1)),'ok')}return}
+  if(e.target.closest('[data-qparfit]')){e.preventDefault();if(QPAR)MAP.fitBounds(QPAR.getBounds(),{padding:[60,60],maxZoom:19});return}
+  if(e.target.closest('[data-qppr]')){e.preventDefault();if(!OVERON.ppr)toggleOver('ppr');e.target.closest('[data-qppr]').remove();return}
   const k=e.target.closest('[data-qcopy]');if(k){e.preventDefault();try{await navigator.clipboard.writeText(k.dataset.qcopy);toast('Copié : '+k.dataset.qcopy,'ok')}catch(x){toast('Copie impossible','err')}}
 });
 function refreshMarkers(){
@@ -1031,7 +1099,7 @@ function refreshMarkers(){
 function fitAll(){if(!MAP)return;const pts=IDX.affaires.filter(s=>s.lat!=null).map(s=>[s.lat,s.lng]);if(pts.length>1)MAP.fitBounds(pts,{padding:[50,50],maxZoom:15});else if(pts.length===1)MAP.setView(pts[0],14)}
 /* Modes : placer, déplacer, mesures */
 let DRAW=null;
-function setMode(m){MODE=m;DRAW=null;LASTCLK=null;TEMP&&TEMP.clearLayers();$('#map').classList.toggle('picking',!!m&&m!=='erase');const H={place:'Cliquez sur la carte pour placer la nouvelle affaire — Échap pour annuler',move:'Cliquez sur la carte pour positionner l\u2019affaire — Échap pour annuler',dist:'Cote : cliquez les points — double-clic, clic droit ou Entrée pour terminer',area:'Aire : cliquez les sommets — double-clic, clic droit ou Entrée pour terminer',erase:'Gomme : cliquez sur une mesure pour l\u2019effacer',query:'Interroger : cliquez sur un lieu pour obtenir l\u2019adresse, la commune, le CP et le code INSEE — Échap pour quitter'};const h=$('#modeHint');h.textContent=H[m]||'';h.style.display=m?'block':'none';if(MAP){if(m==='dist'||m==='area')MAP.doubleClickZoom.disable();else MAP.doubleClickZoom.enable();$('#map').style.cursor=m?'crosshair':''}renderTools()}
+function setMode(m){MODE=m;DRAW=null;LASTCLK=null;TEMP&&TEMP.clearLayers();$('#map').classList.toggle('picking',!!m&&m!=='erase');const H={place:'Cliquez sur la carte pour placer la nouvelle affaire — Échap pour annuler',move:'Cliquez sur la carte pour positionner l\u2019affaire — Échap pour annuler',dist:'Cote : cliquez les points — double-clic, clic droit ou Entrée pour terminer',area:'Aire : cliquez les sommets — double-clic, clic droit ou Entrée pour terminer',erase:'Gomme : cliquez sur une mesure pour l\u2019effacer',query:'Interroger : cliquez sur un lieu pour obtenir l\u2019adresse, le code INSEE, la parcelle et les PPR — Échap pour quitter'};const h=$('#modeHint');h.textContent=H[m]||'';h.style.display=m?'block':'none';if(MAP){if(m==='dist'||m==='area')MAP.doubleClickZoom.disable();else MAP.doubleClickZoom.enable();$('#map').style.cursor=m?'crosshair':''}renderTools()}
 let LASTCLK=null;
 async function mapClick(e){
   const ll=e.latlng;
@@ -1092,9 +1160,9 @@ function renderTools(){
     tb('new','plus','Nouvelle affaire',false,'c-green')+tb('place','pin','Placer une affaire sur la carte',MODE==='place','c-green')+tb('fit','target','Voir toutes les affaires',false,'c-green'))+
   pal('affichage','Affichage',
     Object.keys(BASEDEF).map(k=>tb('b:'+k,BASEDEF[k][0],'Fond de carte '+BASEDEF[k][0]+(k==='plan'?' (OpenStreetMap)':k==='sat'?' (satellite Esri)':k==='topo'?' (OpenTopoMap)':' (IGN)'),curBase===k,'txt c-sky')).join('')+SEP+
-    tb('o:cad','parcel','Surcouche : cadastre',OVERON.cad,'c-lime')+tb('o:pente','slope','Surcouche : pentes',OVERON.pente,'c-lime')+tb('o:com','commune','Surcouche : limites communales',OVERON.com,'c-lime')+SEP+
+    tb('o:cad','parcel','Surcouche : cadastre',OVERON.cad,'c-lime')+tb('o:pente','slope','Surcouche : pentes',OVERON.pente,'c-lime')+tb('o:com','commune','Surcouche : limites communales',OVERON.com,'c-lime')+tb('o:ppr','ppr','Surcouche : zonages réglementaires des PPR — inondation, mouvement de terrain, avalanche, feu de forêt, séisme, technologique (Géorisques). Utilisez « Interroger » pour lire la zone au point.',OVERON.ppr,'c-orange')+SEP+
     tb('l:wx','sunCloud',LIVEDEF.wx,!!LIVE.wx,'c-sky')+tb('l:radar','rain',LIVEDEF.radar,!!LIVE.radar,'c-sky')+SEP+
-    tb('m:dist','ruler','Mesure : cote / distance',MODE==='dist','c-amber')+tb('m:area','area','Mesure : aire',MODE==='area','c-amber')+tb('m:erase','eraser','Gomme : effacer une mesure',MODE==='erase','c-pink')+tb('m:query','locinfo','Interroger un lieu : adresse, commune, CP, code INSEE (Base Adresse Nationale)',MODE==='query','c-green'))+
+    tb('m:dist','ruler','Mesure : cote / distance',MODE==='dist','c-amber')+tb('m:area','area','Mesure : aire',MODE==='area','c-amber')+tb('m:erase','eraser','Gomme : effacer une mesure',MODE==='erase','c-pink')+tb('m:query','locinfo','Interroger un lieu : adresse, commune, CP, code INSEE, parcelle cadastrale et risques (PPR)',MODE==='query','c-green'))+
   pal('carnet','Carnet',
     tb('d:carnet','contacts','Carnet d\u2019adresses',DRAWER==='carnet','c-purple')+tb('d:ent','building','Fiche entreprise',DRAWER==='ent','c-purple')+tb('hub',`<svg class="ico" width="18" height="18" viewBox="0 0 850 1220" aria-hidden="true"><path fill="currentColor" d="${MPATH}"/><path fill="currentColor" transform="translate(0 384)" d="${MPATH}"/></svg>`,'MOMOgiciels — ouvrir Momohub','','c-mm'));
 }
@@ -1838,9 +1906,11 @@ $('#btnSettings').onclick=async()=>{
    <label class="f"><span>Sauvegarde auto toutes les</span><div class="row"><input id="s-av" type="number" min="0" value="${esc(s.autoVal)}"><select id="s-au"><option value="min" ${s.autoUnit==='min'?'selected':''}>minutes</option><option value="h" ${s.autoUnit==='h'?'selected':''}>heures</option></select></div></label>
    <div class="f"><span>Vue de carte au démarrage</span><div class="row"><button class="btn" id="s-center">${ic('bookmark',15)} Mémoriser la vue actuelle</button>${s.center?'<button class="btn ghost" id="s-cclear">Réinitialiser</button>':''}</div></div>
    <div class="f c2"><span>Données</span><div class="row" style="flex-wrap:wrap"><button class="btn" id="s-ent">${ic('building',15)} Fiche entreprise</button><button class="btn" id="s-carnet">${ic('contacts',15)} Carnet</button><button class="btn danger" id="s-wipe">Vider le stockage du navigateur</button></div></div>
+   <label class="f c2"><span>Clé API Géorisques (facultative — liste GASPAR des risques dans « Interroger »)</span><div class="row"><input id="s-grt" type="password" placeholder="Jeton gratuit : georisques.gouv.fr › Mon compte" value="${esc(grTok())}" autocomplete="off"><a class="btn ghost" href="https://www.georisques.gouv.fr/doc-api" target="_blank" rel="noopener">Obtenir</a></div></label>
    <p class="mute c2">Stockage actuel : ${Store.mode==='folder'?`dossier « ${esc(Store.dir.name)} » (${Store.granted?'connecté':'à reconnecter'})`:'navigateur (IndexedDB) — choisissez un dossier via Sauvegarde › Nouvelle sauvegarde'}. ${IDX.affaires.length} affaire(s), ${CACHE.size} chargée(s) en mémoire.</p></div>`;
   const m=modal({title:ic('gear',18)+' Paramètres',body,buttons:[{l:'Fermer',cls:'pri'}]});
   $('#s-av',body).onchange=$('#s-au',body).onchange=()=>{s.autoVal=Math.max(0,num($('#s-av',body).value));s.autoUnit=$('#s-au',body).value;markIdx();startAuto()};
+  $('#s-grt',body).onchange=e=>{try{const v=e.target.value.trim();if(v)localStorage.setItem('momojob_grtoken',v);else localStorage.removeItem('momojob_grtoken');toast(v?'Clé Géorisques enregistrée sur ce navigateur':'Clé Géorisques effacée','ok')}catch(x){}};
   $('#s-center',body).onclick=()=>{const c=MAP.getCenter();s.center={c:[c.lat,c.lng],z:MAP.getZoom()};markIdx();toast('Vue mémorisée','ok')};
   const cc=$('#s-cclear',body);if(cc)cc.onclick=()=>{s.center=null;markIdx();toast('Vue par défaut rétablie')};
   $('#s-ent',body).onclick=()=>{document.querySelector('.mw-modal')._close();openDrawer('ent')};
