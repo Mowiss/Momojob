@@ -291,7 +291,7 @@ body.tk #app,body.tk #rapport{bottom:30px}body.tk #toast{bottom:44px}
 .tag .ico{opacity:.9}
 .dh b{display:flex;align-items:center;gap:8px}
 .tb .ico{width:18px;height:18px}
-.c-blue{color:#93c5fd}.c-green{color:#6ee7b7}.c-amber{color:#fcd34d}.c-pink{color:#f9a8d4}.c-purple{color:#d8b4fe}.c-sky{color:#7dd3fc}.c-lime{color:#bef264}.c-orange{color:#fdba74}.c-red{color:#fca5a5}
+.c-mm{color:#b0b0b0}.c-blue{color:#93c5fd}.c-green{color:#6ee7b7}.c-amber{color:#fcd34d}.c-pink{color:#f9a8d4}.c-purple{color:#d8b4fe}.c-sky{color:#7dd3fc}.c-lime{color:#bef264}.c-orange{color:#fdba74}.c-red{color:#fca5a5}
 .stp .si{color:#93c5fd}.stp.done .si{color:var(--ok)}.stp.prog .si{color:var(--warn)}
 .rn .ico{opacity:.9}
 .star{color:#fbbf24}
@@ -1031,9 +1031,10 @@ function renderTools(){
     tb('l:wx','sunCloud',LIVEDEF.wx,!!LIVE.wx,'c-sky')+tb('l:radar','rain',LIVEDEF.radar,!!LIVE.radar,'c-sky')+SEP+
     tb('m:dist','ruler','Mesure : cote / distance',MODE==='dist','c-amber')+tb('m:area','area','Mesure : aire',MODE==='area','c-amber')+tb('m:erase','eraser','Gomme : effacer une mesure',MODE==='erase','c-pink'))+
   pal('carnet','Carnet',
-    tb('d:carnet','contacts','Carnet d\u2019adresses',DRAWER==='carnet','c-purple')+tb('d:ent','building','Fiche entreprise',DRAWER==='ent','c-purple')+tb('d:liens','globe','Liens MOMOgiciels',DRAWER==='liens','c-purple'));
+    tb('d:carnet','contacts','Carnet d\u2019adresses',DRAWER==='carnet','c-purple')+tb('d:ent','building','Fiche entreprise',DRAWER==='ent','c-purple')+tb('hub',`<svg class="ico" width="18" height="18" viewBox="0 0 850 1220" aria-hidden="true"><path fill="currentColor" d="${MPATH}"/><path fill="currentColor" transform="translate(0 384)" d="${MPATH}"/></svg>`,'MOMOgiciels — ouvrir Momohub','','c-mm'));
 }
 $('#tools').addEventListener('click',e=>{const ph=e.target.closest('[data-palt]');if(ph){const k=ph.dataset.palt;PALC[k]=!PALC[k];try{localStorage.setItem('momowork_pal',JSON.stringify(PALC))}catch(err){}ph.parentElement.classList.toggle('closed',!!PALC[k]);return}const b=e.target.closest('[data-tool]');if(!b)return;const [k,v]=b.dataset.tool.split(':');
+  if(k==='hub'){window.open('https://mowiss.github.io/Momohub/','_blank','noopener');return}
   if(k==='v')return setView(v);
   if(k==='new')return newAffaireDialog({});
   if(k==='place'){setView('map');return setMode(MODE==='place'?null:'place')}

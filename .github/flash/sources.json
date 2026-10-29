@@ -1,0 +1,11 @@
+{
+  "_aide": "cat = infos | local | btp. Mettre actif à false pour couper une source. Une source en erreur est simplement ignorée (voir le journal de l'Action).",
+  "maxParSource": 12,
+  "ageMaxHeures": 48,
+  "sources": [
+    { "cat": "infos", "src": "franceinfo", "url": "https://www.franceinfo.fr/titres.rss", "actif": true },
+    { "cat": "infos", "src": "franceinfo France", "url": "https://www.franceinfo.fr/france.rss", "actif": false },
+    { "cat": "local", "src": "Le Dauphiné", "url": "https://www.ledauphine.com/hautes-alpes/rss", "actif": true, "_note": "adresse à vérifier" },
+    { "cat": "btp", "src": "Le Moniteur", "url": "https://www.lemoniteur.fr/rss/actualites.xml", "actif": true, "_note": "adresse à vérifier" }
+  ]
+}

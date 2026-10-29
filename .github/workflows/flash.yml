@@ -1,0 +1,33 @@
+# MomoJOB — prépare le bandeau FLASH (flux presse) toutes les 20 minutes.
+# Le résultat est écrit dans la branche « flash » (un seul commit, réécrit à chaque passage :
+# l'historique de la branche principale reste propre). MomoJOB le lit sur raw.githubusercontent.com.
+name: Bandeau FLASH
+on:
+  schedule:
+    - cron: "*/20 * * * *"
+  workflow_dispatch: {}
+permissions:
+  contents: write
+concurrency:
+  group: flash
+  cancel-in-progress: true
+jobs:
+  flash:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Lecture des flux
+        run: node .github/flash/flash.mjs .github/flash/sources.json out/flash.json
+      - name: Publication dans la branche flash
+        run: |
+          cd out
+          git init -q -b flash
+          git config user.name "momojob-flash"
+          git config user.email "flash@users.noreply.github.com"
+          git add flash.json
+          git commit -q -m "flash $(date -u +%FT%TZ)"
+          git push -q -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" flash:flash
