@@ -213,7 +213,7 @@ body.tk #app,body.tk #rapport{bottom:30px}body.tk #toast{bottom:44px}
 .qsec{margin-top:8px;padding-top:6px;border-top:1px solid #4b5563}.qsec h5{display:flex;align-items:center;gap:6px;margin:0 0 4px;font-size:12px;color:#e5e7eb;text-transform:uppercase;letter-spacing:.04em}
 .qrt{color:#9ca3af;font-size:11.5px;margin-top:5px}.qpl{margin:2px 0 0;padding-left:16px}.qpl li{margin:2px 0}.qpl b{color:#f3f4f6;font-weight:600}.qpl small{display:block;color:#9ca3af}.qrl{color:#e5e7eb;font-size:12px}
 .jprog{display:flex;align-items:center;gap:10px;margin-bottom:12px;color:var(--mute)}.jprog .bar{flex:1}
-.jal .cardh{gap:8px}.jal.st-ok{border-color:#065f46}.jal.over{border-color:var(--acc2);background:var(--acc-l)}
+.jal .cardh{gap:8px}.jal.st-ok{border-color:#065f46}.prel.over{border-color:var(--acc2);background:var(--acc-l)}.jal.over{border-color:var(--acc2);background:var(--acc-l)}
 .jnum{width:26px;height:26px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;color:#111827;font-weight:800;font-size:12px;flex:none}
 .kpis{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
 .kpi{flex:1;min-width:150px;border:1px solid var(--pan2);background:var(--pan);border-radius:8px;padding:9px 12px;display:flex;flex-direction:column;gap:2px}
@@ -566,7 +566,7 @@ const RTABS=[['rapport','chart','Rapport de suivi'],['deno','tag','Dénomination
 const dcFilled=v=>v!==undefined&&v!==''&&v!==false&&!(Array.isArray(v)&&!v.some(r=>r&&Object.values(r).some(x=>x!==''&&x!=null)));
 const STEPS=[
   {k:'deno',l:'Dénomination',ic:'tag',started:a=>!!(a.deno.adresse||a.deno.client.societe)},
-  {k:'prelim',l:'Étude préliminaire',ic:'flask',started:a=>a.prelim.items.some(i=>i.v)},
+  {k:'prelim',l:'Étude préliminaire',ic:'flask',started:a=>a.prelim.items.some(i=>i.v||(i.files||[]).length)},
   {k:'prix',l:'Consultation des prix',ic:'receipt',started:a=>a.prix.cats.some(c=>c.rows.length)},
   {k:'metre',l:'Métré',ic:'square',started:a=>!!(a.metre.map||a.metre.rows.length)},
   {k:'jalons',l:'Jalons',ic:'flag',started:a=>(a.jalons||[]).some(j=>j.valide||j.pieces.some(p=>p.file))},
@@ -652,6 +652,7 @@ async function mirrorFiles(fd,a){
   const want=new Map(),put=(dir,base,f)=>{const ext=extOf(f.name);let n=fsafe(base)+ext,i=2;while(want.has(dir+'/'+n))n=fsafe(base)+' ('+(i++)+')'+ext;want.set(dir+'/'+n,f)};
   a.docs.forEach(x=>x.file&&put('Documents',x.nom||x.file.name.replace(/\.[^.]+$/,''),x.file));
   (a.fact||[]).forEach(x=>x.file&&put('Devis et facturation',FACT_T[x.type]+(x.num?' '+x.num:'')+(x.objet?' - '+x.objet:''),x.file));
+  a.prelim.items.forEach((it,i)=>(it.files||[]).forEach(x=>x.file&&put('Etudes preliminaires/'+fsafe((i+1)+' - '+(it.l||'Etude')),x.nom||x.file.name.replace(/\.[^.]+$/,''),x.file)));
   (a.jalons||[]).forEach((j,i)=>j.pieces.forEach(x=>x.file&&put('Jalons/'+fsafe((i+1)+' - '+(j.titre||'Jalon')),x.nom||x.file.name.replace(/\.[^.]+$/,''),x.file)));
   if(!want.size){try{await fd.removeEntry(PJ_DIR,{recursive:true})}catch(e){}return}
   const pj=await fd.getDirectoryHandle(PJ_DIR,{create:true});
@@ -718,7 +719,7 @@ function normIdx(){const n=newIndex();for(const k in n)if(IDX[k]==null)IDX[k]=n[
 function newAff(p={}){return {app:'MOMOwork-affaire',v:1,id:uid('AF-'),created:new Date().toISOString(),updated:new Date().toISOString(),
   deno:{nom:p.nom||'Nouvelle affaire',ref:'',adresse:p.adresse||'',lat:p.lat??null,lng:p.lng??null,etat:p.etat||'ao',echeance:p.echeance||'',repondu:false,avalider:false,
     client:Object.assign({societe:'',contact:'',tel:'',mail:'',secteur:'',adresse:''},p.client||{}),moe:{societe:'',contact:'',tel:'',mail:''},contacts:[],typo:{demolition:false,terrassement:false,vrd:false},montant:'',debut:'',duree:'',notes:''},
-  prelim:{items:[{l:'Étude de sol (géotechnique)',v:'',txt:''},{l:'Pollution des sols',v:'',txt:''},{l:'Hydrologie / hydrogéologie',v:'',txt:''}]},
+  prelim:{items:[{l:'Étude de sol (géotechnique)',v:'',txt:'',files:[]},{l:'Pollution des sols',v:'',txt:'',files:[]},{l:'Amiante / HAP (enrobés)',v:'',txt:'',files:[]},{l:'Hydrologie / hydrogéologie',v:'',txt:'',files:[]}]},
   prix:{cats:[{l:'Tuyaux & autres VRD',rows:[]},{l:'Éclairage',rows:[]},{l:'Clôtures',rows:[]},{l:'Espaces verts',rows:[]}]},
   metre:{map:null,rows:[]},docs:[],fact:[],jalons:tplJalons(),events:[],dc:{dc1:{},dc2:{},dc3:{},dc4:[]},steps:{}}}
 function normAff(a){const n=newAff();for(const k in n)if(a[k]==null)a[k]=n[k];for(const k in n.deno)if(a.deno[k]===undefined)a.deno[k]=n.deno[k];for(const k of ['dc1','dc2','dc3','dc4'])if(!a.dc[k])a.dc[k]=n.dc[k];return a}
@@ -1330,7 +1331,7 @@ function tabRapport(){
    <div class="card"><div class="cardh"><b>${ic('folder')} Documents liés</b><span class="sp"></span><button class="btn sm" data-act="tab" data-t="docs">Ouvrir</button></div>
      <div class="chips" style="margin-bottom:6px">${Object.entries(DOC_ST).map(([k,[l,c]])=>`<span class="chip"><i style="background:${c}"></i>${l} : <b>${dc[k]}</b></span>`).join('')}</div>
      ${a.docs.slice(0,8).map(x=>`<div class="kv"><span>${x.file?ic('clip',13)+' ':''}${esc(x.nom||'(sans nom)')}</span><b style="color:${DOC_ST[x.st][1]}">${DOC_ST[x.st][0]}</b></div>`).join('')||'<p class="mute">Aucun document suivi.</p>'}${a.docs.length>8?`<p class="mute">+ ${a.docs.length-8} autre(s)…</p>`:''}</div>
-   <div class="card"><div class="cardh"><b>${ic('flask')} Étude préliminaire</b></div>${a.prelim.items.map(i=>`<div class="kv"><span>${esc(i.l)}</span><b style="color:${i.v==='oui'?'var(--ok)':i.v==='nc'?'var(--warn)':'inherit'}">${{oui:'Oui',non:'Non',nc:'À déterminer'}[i.v]||'—'}</b></div>${i.v==='oui'&&i.txt?`<div class="mute" style="font-size:12px;margin:2px 0 6px">${esc(i.txt.slice(0,180))}${i.txt.length>180?'…':''}</div>`:''}`).join('')}</div>
+   <div class="card"><div class="cardh"><b>${ic('flask')} Étude préliminaire</b></div>${a.prelim.items.map(i=>`<div class="kv"><span>${(i.files||[]).length?ic('clip',13)+' ':''}${esc(i.l)}${(i.files||[]).length>1?` (${i.files.length})`:''}</span><b style="color:${i.v==='oui'?'var(--ok)':i.v==='nc'?'var(--warn)':'inherit'}">${{oui:'Oui',non:'Non',nc:'À déterminer'}[i.v]||'—'}</b></div>${i.v==='oui'&&i.txt?`<div class="mute" style="font-size:12px;margin:2px 0 6px">${esc(i.txt.slice(0,180))}${i.txt.length>180?'…':''}</div>`:''}`).join('')}</div>
    <div class="card"><div class="cardh"><b>${ic('receipt')} Consultation des prix</b></div>${prixRet.map(c=>`<div class="kv"><span>${esc(c.l)} (${c.n} ligne${c.n>1?'s':''})</span><b>${c.t?eur(c.t):'—'}</b></div>`).join('')}<div class="kv"><span><b>Total retenu</b></span><b style="color:var(--acc)">${eur(prixRet.reduce((t,c)=>t+c.t,0))}</b></div></div>
    <div class="card"><div class="cardh"><b>${ic('euro')} Devis &amp; facturation</b><span class="sp"></span><button class="btn sm" data-act="tab" data-t="fact">Ouvrir</button></div>${(()=>{const T=factTotals(a),F=a.fact||[];return `<div class="kv"><span>Devis acceptés HT</span><b>${eur(T.acc)}</b></div><div class="kv"><span>Facturé HT</span><b>${eur(T.fac)}</b></div><div class="kv"><span>Reste à facturer HT</span><b>${eur(T.reste)}</b></div><div class="kv"><span>Encaissé / en attente TTC</span><b>${eur(T.paye)} / ${eur(T.du)}</b></div><div class="kv"><span>Pièces épinglées</span><b>${F.filter(x=>x.file).length}${T.late?` · <span style="color:#f87171">${T.late} en retard</span>`:''}</b></div>`})()}</div>
    <div class="card"><div class="cardh"><b>${ic('square')} Métré</b></div><div class="kv"><span>Projet Mapulator</span><b>${a.metre.map?esc(a.metre.map.name):'Non lié'}</b></div><div class="kv"><span>Postes</span><b>${a.metre.rows.length}</b></div><div class="kv"><span>Total métré HT</span><b style="color:var(--acc)">${eur(metreTotal(a))}</b></div></div>
@@ -1380,11 +1381,17 @@ function tabDeno(){
 
 /* --- Onglet Étude préliminaire --- */
 function tabPrelim(){
-  let h=stepBar('prelim','Étude préliminaire','Pour chaque étude : oui / non — et si oui, ce qu\u2019il faut en dire.');
-  A.prelim.items.forEach((it,i)=>{h+=`<div class="card"><div class="cardh">${it.custom?`<input class="cattitle" data-b="prelim.items.${i}.l" value="${esc(it.l)}">`:`<b>${esc(it.l)}</b>`}<span class="sp"></span><div class="seg">${[['oui','Oui'],['non','Non'],['nc','À déterminer']].map(([k,l])=>`<button class="${it.v===k?'on '+k:''}" data-act="prelSet" data-i="${i}" data-v="${k}">${l}</button>`).join('')}</div>${it.custom?`<button class="btn sm ghost" data-act="prelDel" data-i="${i}" title="Supprimer">${ic('trash',15)}</button>`:''}</div>
-   ${it.v==='oui'?`<textarea data-b="prelim.items.${i}.txt" rows="4" placeholder="Ce qu'il faut en dire : conclusions, contraintes, impacts sur l'offre…">${esc(it.txt)}</textarea>`:it.v==='nc'?`<textarea data-b="prelim.items.${i}.txt" rows="2" placeholder="À demander à qui ? pour quand ?">${esc(it.txt)}</textarea>`:''}</div>`});
-  return h+`<button class="btn" data-act="prelAdd">${ic('plus',15)} Autre étude (amiante, réseaux existants, archéologie…)</button>`;
+  let h=stepBar('prelim','Étude préliminaire','Pour chaque étude : oui / non — et si oui, ce qu\u2019il faut en dire. Joignez les rapports (géotechnique, diagnostic pollution, amiante/HAP…) : bouton ou glisser-déposer sur la carte de l\u2019étude.');
+  A.prelim.items.forEach((it,i)=>{const F=it.files||[];h+=`<div class="card prel" data-pdrop="${i}"><div class="cardh">${it.custom?`<input class="cattitle" data-b="prelim.items.${i}.l" value="${esc(it.l)}">`:`<b>${esc(it.l)}</b>`}<span class="sp"></span>${F.length?`<span class="mute">${ic('clip',13)} ${F.length} rapport(s)</span>`:''}<div class="seg">${[['oui','Oui'],['non','Non'],['nc','À déterminer']].map(([k,l])=>`<button class="${it.v===k?'on '+k:''}" data-act="prelSet" data-i="${i}" data-v="${k}">${l}</button>`).join('')}</div><button class="btn sm ghost" data-act="prelDel" data-i="${i}" title="Supprimer cette étude">${ic('trash',15)}</button></div>
+   ${it.v==='oui'?`<textarea data-b="prelim.items.${i}.txt" rows="4" placeholder="Ce qu'il faut en dire : conclusions, contraintes, impacts sur l'offre…">${esc(it.txt)}</textarea>`:it.v==='nc'?`<textarea data-b="prelim.items.${i}.txt" rows="2" placeholder="À demander à qui ? pour quand ?">${esc(it.txt)}</textarea>`:''}
+   ${F.length?`<table class="tbl" style="margin-top:6px"><thead><tr><th>Rapport</th><th>Fichier</th><th title="Joindre au dossier de réponse client">Réponse</th><th></th></tr></thead><tbody>${F.map((x,k)=>`<tr><td><input data-b="prelim.items.${i}.files.${k}.nom" value="${esc(x.nom||'')}" placeholder="Nom du rapport"></td><td><span class="fname" title="${esc(x.file.name)}">${ic('clip',13)} ${esc(x.file.name)}</span> <small class="mute">${fmtSize(x.file.size)}</small> <button class="btn sm" data-act="prelView" data-i="${i}" data-k="${k}" title="Voir">${ic('eye',13)}</button><button class="btn sm" data-act="prelDl" data-i="${i}" data-k="${k}" title="Télécharger">${ic('download',13)}</button></td><td style="text-align:center"><input type="checkbox" data-b="prelim.items.${i}.files.${k}.rep" ${x.rep?'checked':''}></td><td><button class="x" data-act="prelFDel" data-i="${i}" data-k="${k}" title="Retirer ce rapport">${ic('x',14)}</button></td></tr>`).join('')}</tbody></table>`:''}
+   <div class="row" style="margin-top:6px"><button class="btn sm" data-act="prelAttach" data-i="${i}">${ic('clip',13)} Joindre un rapport</button><small class="mute">ou glissez les fichiers sur cette étude</small></div></div>`});
+  return h+`<button class="btn" data-act="prelAdd">${ic('plus',15)} Autre étude (réseaux existants, archéologie, faune-flore…)</button>`;
 }
+const fmtSize=n=>n<1024?n+' o':n<1048576?Math.round(n/1024)+' Ko':(n/1048576).toLocaleString('fr-FR',{maximumFractionDigits:1})+' Mo';
+async function prelAttachFiles(i,files){const it=A.prelim.items[i];it.files=it.files||[];let n=0;
+  for(const f of files){const fo=await fileObj(f);if(!fo)continue;it.files.push({id:uid('R-'),nom:f.name.replace(/\.[^.]+$/,''),rep:false,file:fo});n++}
+  if(n){if(!it.v)it.v='oui';touch();renderRTab();renderRNav();toast(`${n} rapport(s) joint(s) à « ${it.l} »`,'ok')}}
 
 /* --- Onglet Consultation des prix --- */
 function tabPrix(){
@@ -1611,8 +1618,12 @@ const ACTS={
   ctAdd:()=>{A.deno.contacts.push({nom:'',role:'',tel:'',mail:''});touch();renderRTab()},
   ctDel:b=>{A.deno.contacts.splice(+b.dataset.i,1);touch();renderRTab()},
   prelSet:b=>{const it=A.prelim.items[+b.dataset.i];it.v=it.v===b.dataset.v?'':b.dataset.v;touch();renderRTab();renderRNav()},
-  prelAdd:()=>{A.prelim.items.push({l:'Autre étude',v:'',txt:'',custom:true});touch();renderRTab()},
-  prelDel:b=>{A.prelim.items.splice(+b.dataset.i,1);touch();renderRTab()},
+  prelAdd:()=>{A.prelim.items.push({l:'Autre étude',v:'',txt:'',files:[],custom:true});touch();renderRTab()},
+  prelDel:async b=>{const it=A.prelim.items[+b.dataset.i];if(((it.files||[]).length||it.txt)&&!await appConfirm(`Supprimer l\u2019étude « ${esc(it.l)} »${(it.files||[]).length?' et ses '+it.files.length+' rapport(s)':''} ?`,'Supprimer'))return;A.prelim.items.splice(+b.dataset.i,1);touch();renderRTab();renderRNav()},
+  prelAttach:async b=>{const fs=await pickFile('*/*',true);if(fs&&fs.length)prelAttachFiles(+b.dataset.i,[...fs])},
+  prelView:b=>openData(A.prelim.items[+b.dataset.i].files[+b.dataset.k].file,false),
+  prelDl:b=>openData(A.prelim.items[+b.dataset.i].files[+b.dataset.k].file,true),
+  prelFDel:async b=>{if(!await appConfirm('Retirer ce rapport de l\u2019étude ?','Retirer'))return;A.prelim.items[+b.dataset.i].files.splice(+b.dataset.k,1);touch();renderRTab();renderRNav()},
   prixAdd:b=>{A.prix.cats[+b.dataset.c].rows.push({f:'',p:'',u:'',q:'',pu:'',st:'demande',d:todayISO()});touch();renderRTab();renderRNav()},
   prixDel:b=>{A.prix.cats[+b.dataset.c].rows.splice(+b.dataset.r,1);touch();renderRTab();renderRNav()},
   prixAddCat:()=>{A.prix.cats.push({l:'Nouvelle catégorie',rows:[]});touch();renderRTab()},
@@ -1652,9 +1663,9 @@ R.addEventListener('input',onBind);
 R.addEventListener('change',e=>{const t=e.target;if(t.type==='checkbox'||t.type==='radio'||t.tagName==='SELECT')onBind(e);
   if(t.dataset.ac==='client'){const c=IDX.carnet.clients.find(x=>(x.societe||x.nom)===t.value);if(c){const cl=A.deno.client;cl.contact=cl.contact||c.nom||'';cl.tel=cl.tel||c.tel||'';cl.mail=cl.mail||c.mail||'';cl.secteur=cl.secteur||c.secteur||'';cl.adresse=cl.adresse||c.adresse||'';touch();renderRTab()}}
   if(t.dataset.b&&t.dataset.b.endsWith('.st')&&RTAB==='docs')renderRNav()});
-R.addEventListener('dragover',e=>{if(RTAB==='jalons'){const c=e.target.closest('[data-jdrop]');if(c){e.preventDefault();$$('.jal.over').forEach(x=>x!==c&&x.classList.remove('over'));c.classList.add('over')}return}if(RTAB!=='docs'&&RTAB!=='fact')return;e.preventDefault();$('#drop')?.classList.add('over')});
+R.addEventListener('dragover',e=>{if(RTAB==='prelim'){const c=e.target.closest('[data-pdrop]');if(c){e.preventDefault();$$('.prel.over').forEach(x=>x!==c&&x.classList.remove('over'));c.classList.add('over')}return}if(RTAB==='jalons'){const c=e.target.closest('[data-jdrop]');if(c){e.preventDefault();$$('.jal.over').forEach(x=>x!==c&&x.classList.remove('over'));c.classList.add('over')}return}if(RTAB!=='docs'&&RTAB!=='fact')return;e.preventDefault();$('#drop')?.classList.add('over')});
 R.addEventListener('dragleave',e=>{if(e.target.id==='drop')e.target.classList.remove('over')});
-R.addEventListener('drop',e=>{if(RTAB==='jalons'){const c=e.target.closest('[data-jdrop]');$$('.jal.over').forEach(x=>x.classList.remove('over'));if(c&&e.dataTransfer.files.length){e.preventDefault();jAttachFiles(+c.dataset.jdrop,[...e.dataTransfer.files])}return}if(RTAB!=='docs'&&RTAB!=='fact')return;e.preventDefault();$('#drop')?.classList.remove('over');if(e.dataTransfer.files.length&&RTAB==='fact'){addFactFiles([...e.dataTransfer.files]);return}if(e.dataTransfer.files.length)addFiles([...e.dataTransfer.files])});
+R.addEventListener('drop',e=>{if(RTAB==='prelim'){const c=e.target.closest('[data-pdrop]');$$('.prel.over').forEach(x=>x.classList.remove('over'));if(c&&e.dataTransfer.files.length){e.preventDefault();prelAttachFiles(+c.dataset.pdrop,[...e.dataTransfer.files])}return}if(RTAB==='jalons'){const c=e.target.closest('[data-jdrop]');$$('.jal.over').forEach(x=>x.classList.remove('over'));if(c&&e.dataTransfer.files.length){e.preventDefault();jAttachFiles(+c.dataset.jdrop,[...e.dataTransfer.files])}return}if(RTAB!=='docs'&&RTAB!=='fact')return;e.preventDefault();$('#drop')?.classList.remove('over');if(e.dataTransfer.files.length&&RTAB==='fact'){addFactFiles([...e.dataTransfer.files]);return}if(e.dataTransfer.files.length)addFiles([...e.dataTransfer.files])});
 document.addEventListener('mousedown',e=>{const b=e.target.closest('[data-cmd]');if(!b)return;e.preventDefault();document.execCommand(b.dataset.cmd,false,null);const ed=b.closest('.rte')?.querySelector('[contenteditable]');ed&&ed.dispatchEvent(new Event('input',{bubbles:true}))});
 
 /* ============ Jalons (liste modifiable, pièces jointes pour valider) ============ */
@@ -1799,10 +1810,12 @@ function buildPack(a,mode){
     const seen=new Set(),uniq=f=>{const k=(f.data||'').length+':'+(f.data||'').slice(-80);if(seen.has(k))return false;seen.add(k);return true};
     (a.jalons||[]).forEach(j=>j.pieces.filter(x=>x.rep&&x.file&&uniq(x.file)).forEach(x=>out.push(file(N(++n,x.nom||x.file.name.replace(/\.[^.]+$/,'')),x.file))));
     (a.fact||[]).filter(x=>x.type==='devis'&&x.rep&&x.file&&uniq(x.file)).forEach(x=>out.push(file(N(++n,'Devis'+(x.num?' '+x.num:'')+(x.objet?' - '+x.objet:'')),x.file)));
+    a.prelim.items.forEach(it=>(it.files||[]).filter(x=>x.rep&&x.file&&uniq(x.file)).forEach(x=>out.push(file(N(++n,x.nom||x.file.name.replace(/\.[^.]+$/,'')),x.file))));
     a.docs.filter(x=>x.rep&&x.file&&uniq(x.file)).forEach(x=>out.push(file(N(++n,x.nom||x.file.name.replace(/\.[^.]+$/,'')),x.file)));
     return out;
   }
   out.push(pdf(N(++n,'Rapport de suivi'),()=>synthHTML(a)));
+  const PP=a.prelim.items.map((it,i)=>({it,i})).filter(({it})=>(it.files||[]).some(x=>x.file));if(PP.length)out.push({name:N(++n,'Etudes preliminaires'),children:PP.map(({it},q)=>({name:N(q+1,it.l||'Etude'),children:it.files.filter(x=>x.file).map((x,k)=>file(N(k+1,x.nom||x.file.name.replace(/\.[^.]+$/,'')),x.file))}))});
   const JJ=(a.jalons||[]).map((j,i)=>({j,i})).filter(({j})=>j.pieces.some(x=>x.file));if(JJ.length)out.push({name:N(++n,'Jalons'),children:JJ.map(({j,i})=>({name:N(i+1,j.titre||'Jalon'),children:j.pieces.filter(x=>x.file).map((x,k)=>file(N(k+1,x.nom||x.file.name.replace(/\.[^.]+$/,'')),x.file))}))});
   const F=a.fact||[];if(F.length){let k=0;const ch=[pdf(N(++k,'Récapitulatif devis et facturation'),()=>factHTML(a))];F.filter(x=>x.file).forEach(x=>ch.push(file(N(++k,FACT_T[x.type]+(x.num?' '+x.num:'')+(x.objet?' - '+x.objet:'')),x.file)));out.push({name:N(++n,'Devis et facturation'),children:ch})}
   const docs=a.docs.filter(x=>x.file);if(docs.length){const cats=Object.keys(DOC_CAT).filter(c=>docs.some(x=>x.cat===c));
@@ -1855,7 +1868,7 @@ function synthHTML(a){
   let h=`<div class="pdoc">${pHead('Rapport de suivi — '+d.nom)}`+
   kv([['État',ETATS[d.etat].l+(d.repondu?' — offre remise':d.avalider?' — à valider':'')],['Échéance',fmtD(d.echeance)+(d.echeance&&!d.repondu&&d.etat!=='termine'&&d.etat!=='sanssuite'?` (${daysTo(d.echeance)<0?'dépassée':'J-'+daysTo(d.echeance)})`:'')],['Référence',esc(d.ref||'—')],['Adresse',esc(d.adresse||'—')],['Client',esc([d.client.societe,d.client.contact,d.client.tel,d.client.mail].filter(Boolean).join(' — ')||'—')],["Maître d'œuvre",esc([d.moe.societe,d.moe.contact,d.moe.tel].filter(Boolean).join(' — ')||'—')],['Typologie',Object.entries({demolition:'Démolition',terrassement:'Terrassement',vrd:'VRD'}).filter(([k])=>d.typo[k]).map(([,v])=>v).join(', ')||'—'],['Montant estimé HT',d.montant?eur(num(d.montant)):'—']])+
   `<h2>Avancement des étapes</h2><table><tr>${STEPS.map(st=>`<th>${st.l}</th>`).join('')}</tr><tr>${STEPS.map(st=>`<td>${{done:'Terminée',prog:'En cours',todo:'À faire'}[stepState(a,st)]}</td>`).join('')}</tr></table>`+
-  `<h2>Étude préliminaire</h2><table>${a.prelim.items.map(i=>`<tr><th style="width:32%">${esc(i.l)}</th><td style="width:12%">${{oui:'Oui',non:'Non',nc:'À déterminer'}[i.v]||'—'}</td><td style="white-space:pre-wrap">${esc(i.txt||'')}</td></tr>`).join('')}</table>`+
+  `<h2>Étude préliminaire</h2><table>${a.prelim.items.map(i=>`<tr><th style="width:32%">${esc(i.l)}</th><td style="width:12%">${{oui:'Oui',non:'Non',nc:'À déterminer'}[i.v]||'—'}</td><td style="white-space:pre-wrap">${esc(i.txt||'')}${(i.files||[]).length?`<div style="color:#555;margin-top:3px">Rapport(s) joint(s) : ${i.files.map(x=>esc(x.nom||x.file.name)).join(', ')}</div>`:''}</td></tr>`).join('')}</table>`+
   `<h2>Consultation des prix</h2>${a.prix.cats.filter(c=>c.rows.length).map(c=>`<b>${esc(c.l)}</b><table><tr><th>Fournisseur</th><th>Produit</th><th>U</th><th>Qté</th><th>PU HT</th><th>Total HT</th><th>Statut</th></tr>${c.rows.map(r=>`<tr><td>${esc(r.f)}</td><td>${esc(r.p)}</td><td>${esc(r.u)}</td><td>${esc(r.q)}</td><td>${r.pu?eur(num(r.pu)):''}</td><td>${num(r.q)*num(r.pu)?eur(num(r.q)*num(r.pu)):''}</td><td>${PRIX_ST[r.st]||''}</td></tr>`).join('')}</table>`).join('')||'<p>Aucune consultation.</p>'}`+
   `<h2>Métré${a.metre.map?' — Mapulator : '+esc(a.metre.map.name):''}</h2>${a.metre.rows.length?`<table><tr><th>Désignation</th><th>U</th><th>Quantité</th><th>PU HT</th><th>Total HT</th></tr>${a.metre.rows.map(r=>`<tr><td>${esc(r.des)}</td><td>${esc(r.u)}</td><td>${qfmt(num(r.q))}</td><td>${r.pu?eur(num(r.pu)):''}</td><td>${num(r.q)*num(r.pu)?eur(num(r.q)*num(r.pu)):''}</td></tr>`).join('')}<tr><th colspan="4">Total HT</th><th>${eur(metreTotal(a))}</th></tr></table>`:'<p>Aucun poste.</p>'}`+
   (()=>{const T=factTotals(a);return (a.fact||[]).length?`<h2>Devis &amp; facturation</h2><table><tr><th>Devis acceptés HT</th><th>Facturé HT</th><th>Reste à facturer HT</th><th>Encaissé TTC</th><th>En attente TTC</th></tr><tr><td>${eur(T.acc)}</td><td>${eur(T.fac)}</td><td>${eur(T.reste)}</td><td>${eur(T.paye)}</td><td>${eur(T.du)}</td></tr></table>`:''})()+
