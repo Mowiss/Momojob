@@ -218,6 +218,8 @@ body.tk #app,body.tk #rapport{bottom:30px}body.tk #toast{bottom:44px}
 #bimView iframe{flex:1;border:0;width:100%;background:#0b1220}
 body.dragging #rapport.on{outline:2px dashed var(--acc2);outline-offset:-4px}
 #dropHint{position:fixed;left:50%;top:10px;transform:translateX(-50%);z-index:4000;background:var(--acc);color:#fff;padding:8px 16px;border-radius:8px;font-weight:600;pointer-events:none}
+.useg{display:inline-flex;border:1px solid var(--line);border-radius:6px;overflow:hidden}.useg button{border:0;background:transparent;color:var(--mute);padding:3px 9px;font:inherit;font-size:12px;cursor:pointer}.useg button.on{background:var(--blue);color:#fff;font-weight:600}
+.qalt{display:block;color:var(--mute);font-size:11px}
 .dlink{color:#93c5fd;text-decoration:none;display:inline-flex;align-items:center;gap:4px}.dlink:hover{color:#fff;text-decoration:underline}.prel.over{border-color:var(--acc2);background:var(--acc-l)}.jal.over{border-color:var(--acc2);background:var(--acc-l)}
 .jnum{width:26px;height:26px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;color:#111827;font-weight:800;font-size:12px;flex:none}
 .kpis{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
@@ -1410,14 +1412,16 @@ function tabPrix(){
 function updPrix(){let all=0;A.prix.cats.forEach((c,ci)=>{let t=0;c.rows.forEach((r,ri)=>{const v=num(r.q)*num(r.pu);const el=$('#pt-'+ci+'-'+ri);if(el){el.textContent=v?eur(v):'';el.closest('tr').className='st-'+r.st}if(r.st==='retenu')t+=v});const e=$('#pc-'+ci);if(e)e.textContent='Retenu : '+eur(t);all+=t});const e=$('#pc-all');if(e)e.textContent=eur(all)}
 
 /* --- Onglet Métré : Mapulator intégré --- */
-const metreTotal=a=>a.metre.rows.reduce((t,r)=>t+num(r.q)*num(r.pu),0);
+/* Poste à double unité (tranchée : m³ ou ml) : r.alt = {u,q}, r.uSel='alt' pour chiffrer dans l'autre unité */
+const rQ=r=>r.uSel==='alt'&&r.alt?r.alt.q:r.q, rU=r=>r.uSel==='alt'&&r.alt?r.alt.u:r.u;
+const metreTotal=a=>a.metre.rows.reduce((t,r)=>t+num(rQ(r))*num(r.pu),0);
 let MSUB='plan',MAPU={aff:null,ready:false,waiters:[],last:null};
 const MAPU_BRIDGE=`<script>(function(){
 var P=window.parent,T=null;
 function q(){var o=[];(state.tools||[]).forEach(function(t){var ms=t.measurements||[];if(!ms.length)return;
  var nm=(t.indice?t.indice+' — ':'')+(t.name||'Sans nom'),len=function(){return ms.reduce(function(a,p){return a+calculateLength(p,false)},0)};
  if(t.type==='VRD')o.push({k:t.id,des:nm,u:'ml',q:len(),ty:'VRD'});
- else if(t.type==='TRANCHEE'){var w=+t.trancheeW||0.8,d=+t.trancheeD||1.2,l=len();o.push({k:t.id,des:nm+' — tranchée '+w+' × '+d,u:'m³',q:l*w*d,ty:'Tranchée',ml:l});o.push({k:t.id+':ml',des:nm+' — longueur de tranchée',u:'ml',q:l,ty:'Tranchée'})}
+ else if(t.type==='TRANCHEE'){var w=+t.trancheeW||0.8,d=+t.trancheeD||1.2,l=len();o.push({k:t.id,des:nm+' — tranchée '+w+' × '+d,u:'m³',q:l*w*d,ty:'Tranchée',alt:{u:'ml',q:Math.round(l*100)/100}})}
  else if(t.type==='AREA')o.push({k:t.id,des:nm,u:'m²',q:ms.reduce(function(a,p){return a+calculateArea(p)},0),ty:'Surface'});
  else if(t.type==='TERRASSEMENT')o.push({k:t.id,des:nm+(t.terrType==='remblais'?' (remblais)':' (déblais)'),u:'m³',q:terrassementVolumes(t).total,ty:'Terrassement'});
  else if(t.type==='POINT')o.push({k:t.id,des:nm,u:'u',q:ms.length,ty:'Pointage'});});
@@ -1486,11 +1490,11 @@ function tabMetre(){
 function postesHTML(){
   const m=A.metre;
   return `<div class="card"><div class="cardh"><b>Postes de métré</b><span class="mute">— les lignes Mapulator suivent le plan Mapulator en direct ; renseignez les prix unitaires</span><span class="sp"></span><button class="btn sm" data-act="metreAdd">${ic('plus',14)} Poste manuel</button></div>
-   <table class="tbl"><thead><tr><th>Désignation</th><th>Unité</th><th>Quantité</th><th>PU HT</th><th>Total HT</th><th>Source</th><th></th></tr></thead><tbody>${m.rows.map((r,i)=>{const P='metre.rows.'+i,mp=r.src==='map';return `<tr><td>${mp?`<b>${esc(r.des)}</b>`:`<input data-b="${P}.des" value="${esc(r.des)}">`}</td><td>${mp?esc(r.u):`<input class="w4" data-b="${P}.u" value="${esc(r.u)}">`}</td><td class="num">${mp?qfmt(r.q):`<input class="w7 num" data-b="${P}.q" data-rr="metre" value="${esc(r.q)}">`}</td><td><input class="w7 num" data-b="${P}.pu" data-rr="metre" value="${esc(r.pu)}"></td><td class="num" id="mt-${i}"></td><td>${mp?`<span class="srcb map">${ic('map',11)} ${esc(r.ty||'Mapulator')}</span>`:`<span class="srcb">${ic('edit',11)} manuel</span>`}</td><td>${mp?'':`<button class="x" data-act="metreDel" data-i="${i}">${ic('x',14)}</button>`}</td></tr>`}).join('')||'<tr><td colspan="7" class="empty">Aucun poste : tracez sur le plan Mapulator ou ajoutez un poste manuel.</td></tr>'}</tbody></table>
+   <table class="tbl"><thead><tr><th>Désignation</th><th>Unité</th><th>Quantité</th><th>PU HT</th><th>Total HT</th><th>Source</th><th></th></tr></thead><tbody>${m.rows.map((r,i)=>{const P='metre.rows.'+i,mp=r.src==='map';return `<tr><td>${mp?`<b>${esc(r.des)}</b>`:`<input data-b="${P}.des" value="${esc(r.des)}">`}</td><td>${mp&&r.alt?`<div class="useg" title="Unité de chiffrage du poste"><button class="${r.uSel==='alt'?'':'on'}" data-act="metreU" data-i="${i}" data-u="">${esc(r.u)}</button><button class="${r.uSel==='alt'?'on':''}" data-act="metreU" data-i="${i}" data-u="alt">${esc(r.alt.u)}</button></div>`:mp?esc(r.u):`<input class="w4" data-b="${P}.u" value="${esc(r.u)}">`}</td><td class="num">${mp&&r.alt?`<b>${qfmt(rQ(r))} ${esc(rU(r))}</b><small class="qalt">${qfmt(r.uSel==='alt'?r.q:r.alt.q)} ${esc(r.uSel==='alt'?r.u:r.alt.u)}</small>`:mp?qfmt(r.q):`<input class="w7 num" data-b="${P}.q" data-rr="metre" value="${esc(r.q)}">`}</td><td><input class="w7 num" data-b="${P}.pu" data-rr="metre" value="${esc(r.pu)}"></td><td class="num" id="mt-${i}"></td><td>${mp?`<span class="srcb map">${ic('map',11)} ${esc(r.ty||'Mapulator')}</span>`:`<span class="srcb">${ic('edit',11)} manuel</span>`}</td><td>${mp?'':`<button class="x" data-act="metreDel" data-i="${i}">${ic('x',14)}</button>`}</td></tr>`}).join('')||'<tr><td colspan="7" class="empty">Aucun poste : tracez sur le plan Mapulator ou ajoutez un poste manuel.</td></tr>'}</tbody></table>
    <div class="totbar">Total métré HT : <b id="mt-all"></b></div></div>`;
 }
 function renderPostes(){const el=$('#mpostes');if(el&&A){el.innerHTML=postesHTML();updMetre()}}
-function updMetre(){if(!A)return;A.metre.rows.forEach((r,i)=>{const e=$('#mt-'+i);if(e){const v=num(r.q)*num(r.pu);e.textContent=v?eur(v):''}});const e=$('#mt-all');if(e)e.textContent=eur(metreTotal(A))}
+function updMetre(){if(!A)return;A.metre.rows.forEach((r,i)=>{const e=$('#mt-'+i);if(e){const v=num(rQ(r))*num(r.pu);e.textContent=v?eur(v):''}});const e=$('#mt-all');if(e)e.textContent=eur(metreTotal(A))}
 function mountMapu(){
   const fr=$('#mapuFrame');if(!fr)return;
   MAPU.aff=A.id;MAPU.ready=false;
@@ -1509,8 +1513,9 @@ function applyMapuProject(a,json,qty){
   if(json===null&&a.metre.map&&MAPU.armed){a.metre.map=null;ch=true}
   if(json&&(!a.metre.map||a.metre.map.text!==json)){a.metre.map={name:a.metre.map?.name||(a.deno.nom.replace(/[^\w\-]+/g,'_').slice(0,40)||'metre')+'.map',date:new Date().toISOString(),text:json};ch=true}
   const old=new Map(a.metre.rows.filter(r=>r.src==='map').map(r=>[r.k||r.des+'|'+r.u,r]));
-  const rows=(qty||[]).map(q=>{const o=old.get(q.k)||old.get(q.des+'|'+q.u);return {k:q.k,des:q.des,u:q.u,q:q.q,ty:q.ty,pu:o?o.pu:'',src:'map'}});
-  const sig=r=>[r.k,r.des,r.u,r.q,r.pu].join('|');
+  const rows=(qty||[]).map(q=>{const o=old.get(q.k)||old.get(q.des+'|'+q.u);const r={k:q.k,des:q.des,u:q.u,q:q.q,ty:q.ty,pu:o?o.pu:'',src:'map'};
+    if(q.alt){r.alt=q.alt;if(o&&o.uSel)r.uSel=o.uSel;const om=old.get(q.k+':ml');if(om&&om.pu&&!r.pu){r.pu=om.pu;r.uSel='alt'}}return r});
+  const sig=r=>[r.k,r.des,r.u,r.q,r.pu,r.uSel||'',r.alt?r.alt.q:''].join('|');
   const prev=a.metre.rows.filter(r=>r.src==='map');
   let rowsCh=false;if(rows.length!==prev.length||rows.some((r,i)=>sig(r)!==sig(prev[i]))){a.metre.rows=[...rows,...a.metre.rows.filter(r=>r.src!=='map')];ch=rowsCh=true}
   if(ch){touchAff(a);if(A===a){if(rowsCh)renderPostes();renderRNav()}}
@@ -1676,6 +1681,7 @@ const ACTS={
   prixAddCat:()=>{A.prix.cats.push({l:'Nouvelle catégorie',rows:[]});touch();renderRTab()},
   prixDelCat:async b=>{const c=A.prix.cats[+b.dataset.c];if(c.rows.length&&!await appConfirm(`Supprimer la catégorie « ${esc(c.l)} » et ses ${c.rows.length} ligne(s) ?`,'Supprimer'))return;A.prix.cats.splice(+b.dataset.c,1);touch();renderRTab()},
   metreAdd:()=>{A.metre.rows.push({des:'',u:'',q:'',pu:'',src:'man'});touch();renderPostes();renderRNav()},
+  metreU:b=>{const r=A.metre.rows[+b.dataset.i];r.uSel=b.dataset.u||undefined;if(!r.uSel)delete r.uSel;touch();renderPostes()},
   metreDel:b=>{A.metre.rows.splice(+b.dataset.i,1);touch();renderPostes();renderRNav()},
   mapImport:async()=>{const [f]=await pickFile('.map,.json');if(!f)return;const text=await readText(f);let d;try{d=JSON.parse(text)}catch(e){return toast('Fichier .map illisible','err')}
     if(!(d.plans&&d.plans.length)&&!d.imageBase64)return toast('Ce .map ne contient aucun plan','err');
@@ -1873,7 +1879,7 @@ function chronoHTML(a){
   return `<div class="pdoc">${pHead('Chronologie — '+a.deno.nom)}${ev.map(e=>`<h2>${esc(e.titre||'(sans titre)')} <span style="font-weight:400;color:#555">— ${fmtD(e.date)}</span></h2>${e.type==='todo'?`<table>${e.items.map(i=>`<tr><td style="width:22px">${i.done?'☒':'☐'}</td><td>${esc(i.t)}</td></tr>`).join('')||'<tr><td>—</td></tr>'}</table>`:`<div>${e.html||''}</div>`}`).join('')||'<p>Aucun événement.</p>'}<div class="pfoot">MomoJOB — chronologie</div></div>`;
 }
 function metreHTML(a){
-  return `<div class="pdoc">${pHead('Métré — '+a.deno.nom)}${a.metre.map?`<p>Projet Mapulator : ${esc(a.metre.map.name)}</p>`:''}${a.metre.rows.length?`<table><tr><th>Désignation</th><th>U</th><th>Quantité</th><th>PU HT</th><th>Total HT</th></tr>${a.metre.rows.map(r=>`<tr><td>${esc(r.des)}</td><td>${esc(r.u)}</td><td style="text-align:right">${qfmt(num(r.q))}</td><td style="text-align:right">${r.pu?eur(num(r.pu)):''}</td><td style="text-align:right">${num(r.q)*num(r.pu)?eur(num(r.q)*num(r.pu)):''}</td></tr>`).join('')}<tr><th colspan="4">Total HT</th><th style="text-align:right">${eur(metreTotal(a))}</th></tr></table>`:'<p>Aucun poste.</p>'}<div class="pfoot">MomoJOB — métré</div></div>`;
+  return `<div class="pdoc">${pHead('Métré — '+a.deno.nom)}${a.metre.map?`<p>Projet Mapulator : ${esc(a.metre.map.name)}</p>`:''}${a.metre.rows.length?`<table><tr><th>Désignation</th><th>U</th><th>Quantité</th><th>PU HT</th><th>Total HT</th></tr>${a.metre.rows.map(r=>`<tr><td>${esc(r.des)}${r.alt?`<br><small style="color:#666">soit ${qfmt(num(r.uSel==='alt'?r.q:r.alt.q))} ${esc(r.uSel==='alt'?r.u:r.alt.u)}</small>`:''}</td><td>${esc(rU(r))}</td><td style="text-align:right">${qfmt(num(rQ(r)))}</td><td style="text-align:right">${r.pu?eur(num(r.pu)):''}</td><td style="text-align:right">${num(rQ(r))*num(r.pu)?eur(num(rQ(r))*num(r.pu)):''}</td></tr>`).join('')}<tr><th colspan="4">Total HT</th><th style="text-align:right">${eur(metreTotal(a))}</th></tr></table>`:'<p>Aucun poste.</p>'}<div class="pfoot">MomoJOB — métré</div></div>`;
 }
 const DCNAME={dc1:'DC1 - Lettre de candidature',dc2:'DC2 - Déclaration du candidat',dc3:'DC3 - Acte d’engagement'};
 function dcList(a){const L=[];['dc1','dc2','dc3'].forEach(k=>{if(dcPctOf(a,k)>0)L.push({name:DCNAME[k],kind:k,i:null})});a.dc.dc4.forEach((x,i)=>{if(dcPctOf(a,'dc4',i)>0)L.push({name:'DC4 - Sous-traitance '+fsafe(x._st?.societe||('n°'+(i+1))),kind:'dc4',i})});return L}
@@ -1946,7 +1952,7 @@ function synthHTML(a){
   `<h2>Avancement des étapes</h2><table><tr>${STEPS.map(st=>`<th>${st.l}</th>`).join('')}</tr><tr>${STEPS.map(st=>`<td>${{done:'Terminée',prog:'En cours',todo:'À faire'}[stepState(a,st)]}</td>`).join('')}</tr></table>`+
   `<h2>Étude préliminaire</h2><table>${a.prelim.items.map(i=>`<tr><th style="width:32%">${esc(i.l)}</th><td style="width:12%">${{oui:'Oui',non:'Non',nc:'À déterminer'}[i.v]||'—'}</td><td style="white-space:pre-wrap">${esc(i.txt||'')}${(i.files||[]).length?`<div style="color:#555;margin-top:3px">Rapport(s) joint(s) : ${i.files.map(x=>esc(x.nom||x.file.name)).join(', ')}</div>`:''}</td></tr>`).join('')}</table>`+
   `<h2>Consultation des prix</h2>${a.prix.cats.filter(c=>c.rows.length).map(c=>`<b>${esc(c.l)}</b><table><tr><th>Fournisseur</th><th>Produit</th><th>U</th><th>Qté</th><th>PU HT</th><th>Total HT</th><th>Statut</th></tr>${c.rows.map(r=>`<tr><td>${esc(r.f)}</td><td>${esc(r.p)}</td><td>${esc(r.u)}</td><td>${esc(r.q)}</td><td>${r.pu?eur(num(r.pu)):''}</td><td>${num(r.q)*num(r.pu)?eur(num(r.q)*num(r.pu)):''}</td><td>${PRIX_ST[r.st]||''}</td></tr>`).join('')}</table>`).join('')||'<p>Aucune consultation.</p>'}`+
-  `<h2>Métré${a.metre.map?' — Mapulator : '+esc(a.metre.map.name):''}</h2>${a.metre.rows.length?`<table><tr><th>Désignation</th><th>U</th><th>Quantité</th><th>PU HT</th><th>Total HT</th></tr>${a.metre.rows.map(r=>`<tr><td>${esc(r.des)}</td><td>${esc(r.u)}</td><td>${qfmt(num(r.q))}</td><td>${r.pu?eur(num(r.pu)):''}</td><td>${num(r.q)*num(r.pu)?eur(num(r.q)*num(r.pu)):''}</td></tr>`).join('')}<tr><th colspan="4">Total HT</th><th>${eur(metreTotal(a))}</th></tr></table>`:'<p>Aucun poste.</p>'}`+
+  `<h2>Métré${a.metre.map?' — Mapulator : '+esc(a.metre.map.name):''}</h2>${a.metre.rows.length?`<table><tr><th>Désignation</th><th>U</th><th>Quantité</th><th>PU HT</th><th>Total HT</th></tr>${a.metre.rows.map(r=>`<tr><td>${esc(r.des)}${r.alt?` <small style="color:#666">(soit ${qfmt(num(r.uSel==='alt'?r.q:r.alt.q))} ${esc(r.uSel==='alt'?r.u:r.alt.u)})</small>`:''}</td><td>${esc(rU(r))}</td><td>${qfmt(num(rQ(r)))}</td><td>${r.pu?eur(num(r.pu)):''}</td><td>${num(rQ(r))*num(r.pu)?eur(num(rQ(r))*num(r.pu)):''}</td></tr>`).join('')}<tr><th colspan="4">Total HT</th><th>${eur(metreTotal(a))}</th></tr></table>`:'<p>Aucun poste.</p>'}`+
   (()=>{const T=factTotals(a);return (a.fact||[]).length?`<h2>Devis &amp; facturation</h2><table><tr><th>Devis acceptés HT</th><th>Facturé HT</th><th>Reste à facturer HT</th><th>Encaissé TTC</th><th>En attente TTC</th></tr><tr><td>${eur(T.acc)}</td><td>${eur(T.fac)}</td><td>${eur(T.reste)}</td><td>${eur(T.paye)}</td><td>${eur(T.du)}</td></tr></table>`:''})()+
   `<h2>Documents liés</h2>${a.docs.length?`<table><tr><th>Catégorie</th><th>Désignation</th><th>Statut</th><th>Attendu pour</th><th>Reçu le</th><th>Note</th></tr>${a.docs.map(x=>`<tr><td>${DOC_CAT[x.cat]||''}</td><td>${esc(x.nom)}${x.file?' (fichier joint)':''}</td><td>${DOC_ST[x.st][0]}</td><td>${fmtD(x.pour)}</td><td>${fmtD(x.recu)}</td><td>${esc(x.note)}</td></tr>`).join('')}</table>`:'<p>Aucun document suivi.</p>'}`+
   jalonsHTMLprint(a);
