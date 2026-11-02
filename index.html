@@ -216,6 +216,8 @@ body.tk #app,body.tk #rapport{bottom:30px}body.tk #toast{bottom:44px}
 .jal .cardh{gap:8px}.jal.st-ok{border-color:#065f46}#bimView{position:fixed;inset:0;z-index:3000;display:flex;flex-direction:column;background:var(--bg)}
 #bimView .bimh{display:flex;align-items:center;gap:10px;height:46px;padding:0 12px;background:var(--pan);border-bottom:1px solid var(--line);color:var(--ink)}#bimView .bimh b{font-size:15px}#bimView .bimh .sp{flex:1}
 #bimView iframe{flex:1;border:0;width:100%;background:#0b1220}
+body.dragging #rapport.on{outline:2px dashed var(--acc2);outline-offset:-4px}
+#dropHint{position:fixed;left:50%;top:10px;transform:translateX(-50%);z-index:4000;background:var(--acc);color:#fff;padding:8px 16px;border-radius:8px;font-weight:600;pointer-events:none}
 .dlink{color:#93c5fd;text-decoration:none;display:inline-flex;align-items:center;gap:4px}.dlink:hover{color:#fff;text-decoration:underline}.prel.over{border-color:var(--acc2);background:var(--acc-l)}.jal.over{border-color:var(--acc2);background:var(--acc-l)}
 .jnum{width:26px;height:26px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;color:#111827;font-weight:800;font-size:12px;flex:none}
 .kpis{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
@@ -813,8 +815,8 @@ async function openFolder(dir){
 async function reloadFromFolder(){
   try{const idx=await Store.readFile(Store.dir,(await findIndex(Store.dir))||INDEX_FILE);if(!IDXDIRTY){IDX=idx;normIdx();await IDB.set('kv','index',IDX);renderAll()}}catch(e){}
 }
-async function importMMW(){
-  const [f]=await pickFile('.mmw,.mtf,.MTF,.json');if(!f)return;
+async function importMMW(){const [f]=await pickFile('.mmw,.mtf,.MTF,.json');if(f)importMMWFile(f)}
+async function importMMWFile(f){
   let o;try{o=JSON.parse(await readText(f))}catch(e){toast('Fichier illisible','err');return}
   if(isMTF(o))return importMTF(o,f.name);
   if(o.app==='MOMOwork-bundle'){
@@ -1424,7 +1426,21 @@ function send(){try{P.postMessage({mw:'mapu',type:'project',json:(state.plans&&s
 var os=window.setState,DK={plans:1,tools:1,folders:1,pixelsPerMeter:1,scaleRatioInput:1,imageSize:1,appState:1};window.setState=function(u){os(u);for(var k in (u||{}))if(DK[k]){clearTimeout(T);T=setTimeout(send,1200);break}};
 window.addEventListener('message',function(e){var d=e.data;if(!d||d.mw!=='host')return;
  if(d.type==='load'&&d.json){try{applyProjectData(JSON.parse(d.json),d.name)}catch(err){P.postMessage({mw:'mapu',type:'error',msg:'Projet .map illisible'},'*')}}
- if(d.type==='flush'){clearTimeout(T);send()}});
+ if(d.type==='flush'){clearTimeout(T);send()}
+ if(d.type==='addPlans'&&d.files){var k=0;(function nx(){var f=d.files[k++];if(!f)return;Promise.resolve(handleFileUpload({target:{files:[f]}})).then(function(){setTimeout(nx,300)})})()}});
+/* Glisser-déposer dans Mapulator : PDF / images = nouveau plan ; .map / .json = projet */
+var dz=null,dd=0;
+function dzOn(){if(dz)return;dz=document.createElement('div');dz.style.cssText='position:fixed;inset:8px;z-index:99999;border:3px dashed #3b82f6;border-radius:12px;background:rgba(59,130,246,.12);display:flex;align-items:center;justify-content:center;pointer-events:none;font:600 18px system-ui;color:#e5e7eb';dz.textContent='Déposer : PDF ou image = nouveau plan · .map = projet Mapulator';document.body.appendChild(dz)}
+function dzOff(){dd=0;if(dz){dz.remove();dz=null}}
+addEventListener('dragenter',function(e){if(e.dataTransfer&&[].indexOf.call(e.dataTransfer.types,'Files')>=0){e.preventDefault();dd++;dzOn()}});
+addEventListener('dragover',function(e){if(e.dataTransfer&&[].indexOf.call(e.dataTransfer.types,'Files')>=0)e.preventDefault()});
+addEventListener('dragleave',function(){if(--dd<=0)dzOff()});
+addEventListener('drop',function(e){if(!e.dataTransfer||!e.dataTransfer.files.length)return;e.preventDefault();dzOff();
+ var fs=[].slice.call(e.dataTransfer.files),i=0;
+ (function next(){var f=fs[i++];if(!f)return;
+  if(/[.](map|json)$/i.test(f.name)){f.text().then(function(t){try{applyProjectData(JSON.parse(t),f.name)}catch(x){alert('Projet .map illisible : '+f.name)}next()});return}
+  if(/[.]pdf$/i.test(f.name)||(f.type||'').indexOf('image')===0){Promise.resolve(handleFileUpload({target:{files:[f]}})).then(function(){setTimeout(next,300)});return}
+  P.postMessage({mw:'mapu',type:'foreign',name:f.name},'*');next()})()});
 ['setPlanName','setPlanOpacity'].forEach(function(f){var o=window[f];if(typeof o==='function')window[f]=function(){var r=o.apply(this,arguments);clearTimeout(T);T=setTimeout(send,1200);return r}});
 P.postMessage({mw:'mapu',type:'ready'},'*');
 })();<`+`/script>`;
@@ -1504,6 +1520,7 @@ window.addEventListener('message',e=>{
   const d=e.data;if(!d||d.mw!=='mapu')return;
   const fr=$('#mapuFrame');if(!fr||e.source!==fr.contentWindow)return;
   const a=CACHE.get(MAPU.aff);if(!a)return;
+  if(d.type==='foreign'){toast(`« ${d.name} » : Mapulator n\u2019accepte que les PDF, images et .map — déposez-le hors du plan pour le joindre aux Documents`,'err');return}
   if(d.type==='ready'){MAPU.ready=true;MAPU.armed=false;clearTimeout(MAPU.armT);MAPU.armT=setTimeout(()=>{MAPU.armed=true},3500);$('#mapuLoad')?.remove();if(a.metre.map)mapuPost({type:'load',json:a.metre.map.text,name:a.metre.map.name})}
   else if(d.type==='project'){const ch=applyMapuProject(a,d.json,d.qty);mapuState(a.metre.map?`Plan enregistré dans l’affaire${ch?' à '+new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}):''} — ${a.metre.rows.filter(r=>r.src==='map').length} poste(s)`:'Aucun plan : Setup › Importer un plan','ok');const w=MAPU.waiters;MAPU.waiters=[];w.forEach(f=>f())}
   else if(d.type==='error')toast('Mapulator : '+d.msg,'err');
@@ -1694,9 +1711,37 @@ R.addEventListener('input',onBind);
 R.addEventListener('change',e=>{const t=e.target;if(t.type==='checkbox'||t.type==='radio'||t.tagName==='SELECT')onBind(e);
   if(t.dataset.ac==='client'){const c=IDX.carnet.clients.find(x=>(x.societe||x.nom)===t.value);if(c){const cl=A.deno.client;cl.contact=cl.contact||c.nom||'';cl.tel=cl.tel||c.tel||'';cl.mail=cl.mail||c.mail||'';cl.secteur=cl.secteur||c.secteur||'';cl.adresse=cl.adresse||c.adresse||'';touch();renderRTab()}}
   if(t.dataset.b&&t.dataset.b.endsWith('.st')&&RTAB==='docs')renderRNav()});
-R.addEventListener('dragover',e=>{if(RTAB==='prelim'){const c=e.target.closest('[data-pdrop]');if(c){e.preventDefault();$$('.prel.over').forEach(x=>x!==c&&x.classList.remove('over'));c.classList.add('over')}return}if(RTAB==='jalons'){const c=e.target.closest('[data-jdrop]');if(c){e.preventDefault();$$('.jal.over').forEach(x=>x!==c&&x.classList.remove('over'));c.classList.add('over')}return}if(RTAB!=='docs'&&RTAB!=='fact')return;e.preventDefault();$('#drop')?.classList.add('over')});
-R.addEventListener('dragleave',e=>{if(e.target.id==='drop')e.target.classList.remove('over')});
-R.addEventListener('drop',e=>{if(RTAB==='prelim'){const c=e.target.closest('[data-pdrop]');$$('.prel.over').forEach(x=>x.classList.remove('over'));if(c&&e.dataTransfer.files.length){e.preventDefault();prelAttachFiles(+c.dataset.pdrop,[...e.dataTransfer.files])}return}if(RTAB==='jalons'){const c=e.target.closest('[data-jdrop]');$$('.jal.over').forEach(x=>x.classList.remove('over'));if(c&&e.dataTransfer.files.length){e.preventDefault();jAttachFiles(+c.dataset.jdrop,[...e.dataTransfer.files])}return}if(RTAB!=='docs'&&RTAB!=='fact')return;e.preventDefault();$('#drop')?.classList.remove('over');if(e.dataTransfer.files.length&&RTAB==='fact'){addFactFiles([...e.dataTransfer.files]);return}if(e.dataTransfer.files.length)addFiles([...e.dataTransfer.files])});
+/* Glisser-déposer partout : la cible dépend de l'onglet ; à défaut, les fichiers rejoignent les Documents de l'affaire */
+let DRAGN=0;
+const hasFiles=e=>e.dataTransfer&&[...e.dataTransfer.types].includes('Files');
+function dropHint(on){document.body.classList.toggle('dragging',on);let h=$('#dropHint');if(on&&!h){h=document.createElement('div');h.id='dropHint';document.body.append(h)}if(h){if(!on)h.remove();else h.textContent=dropLabel()}}
+function dropLabel(){if(!A||!$('#rapport').classList.contains('on'))return 'Déposer une sauvegarde .mmw ou un export MOMOtion Flow .mtf pour l\u2019importer';
+  return {docs:'Déposer pour joindre aux Documents',fact:'Déposer pour épingler en Devis & facturation',jalons:'Déposer sur un jalon (ou ailleurs : Documents)',prelim:'Déposer sur une étude (ou ailleurs : Documents)',metre:'Déposer sur le plan : PDF / image / .map — ailleurs : Documents'}[RTAB]||'Déposer pour joindre aux Documents de l\u2019affaire'}
+document.addEventListener('dragenter',e=>{if(!hasFiles(e))return;e.preventDefault();DRAGN++;dropHint(true)});
+document.addEventListener('dragleave',e=>{if(!hasFiles(e))return;if(--DRAGN<=0){DRAGN=0;dropHint(false);$$('.over').forEach(x=>x.classList.remove('over'))}});
+document.addEventListener('dragover',e=>{if(!hasFiles(e))return;e.preventDefault();
+  if(!A)return;$$('.jal.over,.prel.over').forEach(x=>x.classList.remove('over'));
+  const c=RTAB==='prelim'?e.target.closest('[data-pdrop]'):RTAB==='jalons'?e.target.closest('[data-jdrop]'):null;if(c)c.classList.add('over');
+  $('#drop')?.classList.toggle('over',!!e.target.closest('#rapport'))});
+document.addEventListener('drop',async e=>{if(!hasFiles(e))return;e.preventDefault();DRAGN=0;dropHint(false);$$('.over').forEach(x=>x.classList.remove('over'));
+  const fs=[...e.dataTransfer.files];if(!fs.length)return;
+  const save=fs.filter(f=>/\.(mmw|mtf)$/i.test(f.name)),rest=fs.filter(f=>!/\.(mmw|mtf)$/i.test(f.name));
+  for(const f of save)await importMMWFile(f);
+  if(!rest.length)return;
+  if(!A||!$('#rapport').classList.contains('on')){toast('Ouvrez une affaire pour y joindre des fichiers (ou déposez une sauvegarde .mmw / .mtf)','err');return}
+  if(RTAB==='prelim'){const c=e.target.closest('[data-pdrop]');if(c)return prelAttachFiles(+c.dataset.pdrop,rest)}
+  if(RTAB==='jalons'){const c=e.target.closest('[data-jdrop]');if(c)return jAttachFiles(+c.dataset.jdrop,rest)}
+  if(RTAB==='fact')return addFactFiles(rest);
+  if(RTAB==='metre'){const maps=rest.filter(f=>/\.map$/i.test(f.name));if(maps.length)await dropMap(maps[0]);const plans=rest.filter(f=>!/\.map$/i.test(f.name)&&(/\.pdf$/i.test(f.name)||/^image\//.test(f.type)));
+    if(plans.length&&MAPU.ready&&MSUB==='plan'){mapuPost({type:'addPlans',files:plans});toast(plans.length+' plan(s) envoyé(s) à Mapulator','ok')}
+    const other=rest.filter(f=>!maps.includes(f)&&!(plans.includes(f)&&MAPU.ready&&MSUB==='plan'));if(!other.length)return;await addFiles(other);return}
+  await addFiles(rest);if(RTAB!=='docs')toast(`${rest.length} fichier(s) joint(s) aux Documents`,'ok');
+});
+async function dropMap(f){const text=await readText(f);let d;try{d=JSON.parse(text)}catch(e){return toast('Fichier .map illisible','err')}
+  if(!(d.plans&&d.plans.length)&&!d.imageBase64)return toast('Ce .map ne contient aucun plan','err');
+  if(A.metre.map&&!await appConfirm('Remplacer le plan Mapulator de cette affaire par « '+esc(f.name)+' » ?','Remplacer'))return;
+  A.metre.map={name:f.name,date:new Date().toISOString(),text};touch();MSUB='plan';
+  if(MAPU.ready&&MAPU.aff===A.id)mapuPost({type:'load',json:text,name:f.name});else renderRTab();toast('Plan importé dans l\u2019affaire','ok')}
 document.addEventListener('mousedown',e=>{const b=e.target.closest('[data-cmd]');if(!b)return;e.preventDefault();document.execCommand(b.dataset.cmd,false,null);const ed=b.closest('.rte')?.querySelector('[contenteditable]');ed&&ed.dispatchEvent(new Event('input',{bubbles:true}))});
 
 /* ============ Jalons (liste modifiable, pièces jointes pour valider) ============ */
