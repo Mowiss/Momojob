@@ -70,7 +70,7 @@ header#top{position:fixed;top:0;left:0;right:0;height:52px;display:flex;align-it
 #count{font-size:12px;color:var(--mute)}
 .view{flex:1;position:relative;overflow:auto;display:none} .view.on{display:block}
 #v-map{overflow:hidden} #map{position:absolute;inset:0;background:#0b1220}
-#modeHint{position:absolute;top:8px;left:50%;transform:translateX(-50%);background:var(--pan);border:1px solid #a16207;color:#fde047;padding:6px 12px;border-radius:6px;z-index:800;font-size:12px;display:none}
+#modeHint button{vertical-align:middle}#modeHint{position:absolute;top:8px;left:50%;transform:translateX(-50%);background:var(--pan);border:1px solid #a16207;color:#fde047;padding:6px 12px;border-radius:6px;z-index:800;font-size:12px;display:none}
 .leaflet-container{cursor:default}.leaflet-container.panning,.leaflet-container.panning *{cursor:grabbing!important}
 #liveLeg{position:absolute;left:8px;bottom:22px;z-index:700;display:flex;flex-direction:column;gap:4px;max-width:min(460px,70%)}
 #liveLeg .ll{display:flex;align-items:center;gap:6px;background:rgba(31,41,55,.92);border:1px solid var(--line);border-radius:6px;padding:4px 8px;font-size:11.5px;color:var(--ink)}
@@ -220,6 +220,12 @@ body.dragging #rapport.on{outline:2px dashed var(--acc2);outline-offset:-4px}
 #dropHint{position:fixed;left:50%;top:10px;transform:translateX(-50%);z-index:4000;background:var(--acc);color:#fff;padding:8px 16px;border-radius:8px;font-weight:600;pointer-events:none}
 .useg{display:inline-flex;border:1px solid var(--line);border-radius:6px;overflow:hidden}.useg button{border:0;background:transparent;color:var(--mute);padding:3px 9px;font:inherit;font-size:12px;cursor:pointer}.useg button.on{background:var(--blue);color:#fff;font-weight:600}
 .qalt{display:block;color:var(--mute);font-size:11px}
+#panoView{position:absolute;top:0;right:0;bottom:0;width:48%;min-width:360px;z-index:900;display:flex;flex-direction:column;background:#0b1220;border-left:1px solid var(--line)}
+#panoView .pvh{display:flex;align-items:center;gap:8px;height:42px;padding:0 10px;background:var(--pan);border-bottom:1px solid var(--line)}#panoView .pvh .sp{flex:1}#panoView .pvd{font-size:12px}
+#panoView iframe{flex:1;border:0;width:100%}
+body.pano-on #map{right:48%}body.pano-on #modeHint{left:26%}body.pano-on #liveLeg{right:calc(48% + 10px)}
+.panomk{background:none;border:0}
+@media(max-width:900px){#panoView{width:100%;min-width:0;top:45%}body.pano-on #map{right:0;bottom:55%}}
 .dlink{color:#93c5fd;text-decoration:none;display:inline-flex;align-items:center;gap:4px}.dlink:hover{color:#fff;text-decoration:underline}.prel.over{border-color:var(--acc2);background:var(--acc-l)}.jal.over{border-color:var(--acc2);background:var(--acc-l)}
 .jnum{width:26px;height:26px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;color:#111827;font-weight:800;font-size:12px;flex:none}
 .kpis{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
@@ -521,6 +527,7 @@ const IC={
  save:'<path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8M7 3v5h8"/>',
  print:'<path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/>',
  cube:'<path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/><path d="M12 12l8-4.5M12 12v9M12 12L4 7.5"/>',
+ pano:'<circle cx="12" cy="12" r="9.5"/><ellipse cx="12" cy="12" rx="9.5" ry="3.6"/><circle cx="12" cy="12" r="1.6"/>',
  gps:'<path d="M3 11l18-8-8 18-2-8z"/>',
  trash:'<path d="M3 6h18M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6M10 11v6M14 11v6M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>',
  x:'<path d="M18 6L6 18M6 6l12 12"/>',
@@ -1031,6 +1038,68 @@ async function liveRadar(){
     liveStatus('radar',`Radar pluie — image de ${new Date(f.time*1000).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})} (vue départementale)`);
   }catch(e){liveStatus('radar','Radar : '+netMsg(e),true)}
 }
+/* ============ Vue immersive : Panoramax (photos de rue libres, sans clé) + secours Google Street View ============ */
+const PNX='https://explore.panoramax.fr/api';
+let PNXL=null,PNXLoading=null,PANO=null,PANOMK=null;
+function loadScript(src){return new Promise((res,rej)=>{const s=document.createElement('script');s.src=src;s.onload=res;s.onerror=()=>rej(new Error('chargement impossible : '+src));document.head.append(s)})}
+async function pnxCoverage(on){
+  if(!MAP)return;
+  if(!on){if(PNXL)MAP.removeLayer(PNXL);return}
+  try{
+    if(!PNXL){if(!PNXLoading)PNXLoading=(L.vectorGrid?Promise.resolve():loadScript('https://unpkg.com/leaflet.vectorgrid@1.3.0/dist/Leaflet.VectorGrid.bundled.min.js'));await PNXLoading;
+      const C='#22d3ee',hide={stroke:false,fill:false,radius:0,weight:0};
+      PNXL=L.vectorGrid.protobuf(PNX+'/map/{z}/{x}/{y}.mvt',{maxNativeZoom:15,maxZoom:20,zIndex:420,interactive:false,rendererFactory:L.canvas.tile,attribution:'Photos © Panoramax',
+        vectorTileLayerStyles:{sequences:{color:C,weight:3,opacity:.9},pictures:(p,z)=>z>=15?{radius:3,fill:true,fillColor:C,fillOpacity:.9,color:'#0e7490',weight:1}:hide,grid:{fill:true,fillColor:C,fillOpacity:.22,stroke:false}}})}
+    if((MODE==='pano'||PANO)&&!MAP.hasLayer(PNXL))PNXL.addTo(MAP);
+  }catch(e){toast('Couverture Panoramax indisponible : '+netMsg(e),'err')}
+}
+function openGSV(lat,lng,head){window.open(`https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${lat},${lng}${head!=null?'&heading='+Math.round(head):''}`,'_blank','noopener')}
+async function pnxNearest(lat,lng){
+  for(const d of [0.0005,0.0018]){
+    const j=await jget(`${PNX}/search?bbox=${lng-d*1.4},${lat-d},${lng+d*1.4},${lat+d}&limit=60`);
+    const F=(j.features||[]).filter(f=>f.geometry&&f.geometry.coordinates);
+    if(F.length){F.sort((a,b)=>MAP.distance([lat,lng],[a.geometry.coordinates[1],a.geometry.coordinates[0]])-MAP.distance([lat,lng],[b.geometry.coordinates[1],b.geometry.coordinates[0]]));return F[0]}
+  }
+  return null;
+}
+async function panoAt(lat,lng){
+  toast('Recherche de photos Panoramax autour du point…');
+  let f=null;try{f=await pnxNearest(lat,lng)}catch(e){
+    L.popup({className:'qpop'}).setLatLng([lat,lng]).setContent(`<div class="qp"><b>Panoramax injoignable</b><div class="mute">${esc(netMsg(e))}</div><div class="qbtns"><button class="btn sm pri" data-gsv="${lat},${lng}">${ic('pano',14)} Ouvrir Google Street View ici</button></div></div>`).openOn(MAP);return}
+  if(!f){L.popup({className:'qpop'}).setLatLng([lat,lng]).setContent(`<div class="qp"><b>Aucune photo Panoramax à moins de 200 m</b><div class="mute">La couverture libre est encore partielle. Google Street View a souvent des images ici.</div><div class="qbtns"><button class="btn sm pri" data-gsv="${lat},${lng}">${ic('pano',14)} Ouvrir Google Street View ici</button></div></div>`).openOn(MAP);return}
+  const c=f.geometry.coordinates,dist=Math.round(MAP.distance([lat,lng],[c[1],c[0]]));
+  openPano(f.id,f.collection,c[1],c[0],(f.properties||{}).datetime,dist);
+}
+function panoDoc(pic,seq){return `<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>html,body{margin:0;height:100%;background:#0b1220;color:#e5e7eb;font:13px system-ui}pnx-photo-viewer{display:block!important;position:absolute!important;top:0;left:0;width:100%!important;height:100%!important}#err{position:absolute;inset:0;display:none;align-items:center;justify-content:center;text-align:center;padding:20px}</style></head><body>
+<pnx-photo-viewer id="v" endpoint="${PNX}" picture="${pic}"${seq?` sequence="${seq}"`:''} lang="fr" url-parameters="false"></pnx-photo-viewer><div id="err">La visionneuse Panoramax n\u2019a pas pu se charger (connexion à cdn.jsdelivr.net requise).</div>
+<script>var exports={},module={exports:exports};<\/script><script src="https://cdn.jsdelivr.net/npm/@panoramax/web-viewer@5.3.1/build/cjs/index_photoviewer.js" onerror="document.getElementById('err').style.display='flex'"><\/script>
+<script>(function(){var el=document.getElementById('v'),P=parent;
+el.addEventListener('psv:picture-loaded',function(e){P.postMessage({mw:'pano',type:'pic',d:e.detail},'*')});
+el.addEventListener('psv:view-rotated',function(e){P.postMessage({mw:'pano',type:'rot',d:e.detail},'*')});})();<\/script></body></html>`}
+function openPano(pic,seq,lat,lng,date,dist){
+  setView('map');
+  let el=$('#panoView');
+  if(!el){el=document.createElement('div');el.id='panoView';$('#v-map').append(el)}
+  el.innerHTML=`<div class="pvh">${ic('pano',17)}<b>Vue immersive</b><span class="mute pvd"></span><span class="sp"></span><button class="btn sm" data-pvgsv title="Ouvrir le même point dans Google Street View">Google Street View</button><button class="btn sm" data-pvclose title="Fermer">${ic('x',14)}</button></div><iframe title="Vue immersive Panoramax" allow="fullscreen"></iframe>`;
+  PANO={pic,lat,lng,head:null,fr:el.querySelector('iframe')};
+  el.querySelector('[data-pvclose]').onclick=closePano;
+  el.querySelector('[data-pvgsv]').onclick=()=>openGSV(PANO.lat,PANO.lng,PANO.head);
+  el.querySelector('.pvd').textContent=[date?'Photo du '+fmtD(String(date).slice(0,10)):'',dist>15?`à ${dist} m du point cliqué`:''].filter(Boolean).join(' · ');
+  PANO.fr.srcdoc=panoDoc(pic,seq);
+  document.body.classList.add('pano-on');setTimeout(()=>MAP.invalidateSize(),50);
+  panoMarker();pnxCoverage(true);
+  MAP.panTo([lat,lng]);
+}
+function panoMarker(){
+  if(!PANO)return;const h=PANO.head==null?0:PANO.head;
+  const html=`<svg width="44" height="44" viewBox="-22 -22 44 44" style="transform:rotate(${h}deg)">${PANO.head==null?'':'<path d="M0 0L-12 -19A22 22 0 0 1 12 -19Z" fill="#22d3ee" fill-opacity=".45" stroke="#22d3ee"/>'}<circle r="6.5" fill="#0e7490" stroke="#fff" stroke-width="2.5"/></svg>`;
+  if(!PANOMK)PANOMK=L.marker([PANO.lat,PANO.lng],{interactive:false,keyboard:false,zIndexOffset:900,icon:L.divIcon({className:'panomk',iconSize:[44,44],iconAnchor:[22,22],html})}).addTo(MAP);
+  else{PANOMK.setLatLng([PANO.lat,PANO.lng]);PANOMK.setIcon(L.divIcon({className:'panomk',iconSize:[44,44],iconAnchor:[22,22],html}))}
+}
+function closePano(){$('#panoView')?.remove();PANO=null;if(PANOMK){MAP.removeLayer(PANOMK);PANOMK=null}document.body.classList.remove('pano-on');setTimeout(()=>MAP.invalidateSize(),50);if(MODE!=='pano')pnxCoverage(false)}
+window.addEventListener('message',e=>{const d=e.data;if(!d||d.mw!=='pano'||!PANO||e.source!==PANO.fr.contentWindow)return;
+  if(d.type==='pic'&&d.d&&d.d.lat!=null){PANO.lat=d.d.lat;PANO.lng=d.d.lon;if(d.d.x!=null)PANO.head=d.d.x;panoMarker();if(!MAP.getBounds().pad(-.15).contains([PANO.lat,PANO.lng]))MAP.panTo([PANO.lat,PANO.lng])}
+  if(d.type==='rot'&&d.d&&d.d.x!=null){PANO.head=d.d.x;panoMarker()}});
 /* ============ Interroger un lieu — Base Adresse Nationale (Géoplateforme IGN, sans clé) ============ */
 let QMK=null,QLAST=null,QPOP=null,QPAR=null,QSEQ=0;
 async function banReverse(lat,lng,index){
@@ -1092,10 +1161,12 @@ async function qMore(pop,seq,lat,lng,insee){
   h+=`<div class="qbtns"><a class="btn sm" href="${rep}" target="_blank" rel="noopener">${ic('ppr',13)} Rapport Géorisques</a>${OVERON.ppr?'':`<button class="btn sm" data-qppr="1">Afficher les zonages</button>`}</div>`;
   qSet(pop,seq,'qrisk',h);
 }
-const qBtns=(lat,lng,label)=>`<div class="qbtns"><button class="btn sm pri" data-qcreate="1">${ic('plus',14)} Créer une affaire ici</button>${label?`<button class="btn sm" data-qcopy="${esc(label)}">${ic('file',13)} Copier l\u2019adresse</button>`:''}</div>`;
+const qBtns=(lat,lng,label)=>`<div class="qbtns"><button class="btn sm pri" data-qcreate="1">${ic('plus',14)} Créer une affaire ici</button><button class="btn sm" data-qpano="${lat},${lng}" title="Regarder autour de ce point (photos Panoramax, sinon Google Street View)">${ic('pano',14)} Vue immersive</button>${label?`<button class="btn sm" data-qcopy="${esc(label)}">${ic('file',13)} Copier l\u2019adresse</button>`:''}</div>`;
 document.addEventListener('click',async e=>{
   const c=e.target.closest('[data-qcreate]');if(c){e.preventDefault();const q=QLAST||{};if(QPOP)MAP.closePopup(QPOP);setMode(null);
     await newAffaireDialog({lat:q.lat,lng:q.lng,adresse:q.label||'',insee:q.insee,parc:q.parcId||q.parc});return}
+  const qp=e.target.closest('[data-qpano]');if(qp){e.preventDefault();const [la,ln]=qp.dataset.qpano.split(',').map(Number);panoAt(la,ln);return}
+  const gs=e.target.closest('[data-gsv]');if(gs){e.preventDefault();const [la,ln]=gs.dataset.gsv.split(',').map(Number);openGSV(la,ln);return}
   if(e.target.closest('[data-qparmeas]')){e.preventDefault();const q=QLAST||{};if(q.parcPts&&q.parcPts.length>=3){IDX.annots.push({id:uid('M-'),type:'area',pts:q.parcPts.slice(0,-1)});markIdx();renderAnnots();toast('Parcelle ajoutée aux mesures : '+measLabel('area',q.parcPts.slice(0,-1)),'ok')}return}
   if(e.target.closest('[data-qparfit]')){e.preventDefault();if(QPAR)MAP.fitBounds(QPAR.getBounds(),{padding:[60,60],maxZoom:19});return}
   if(e.target.closest('[data-qppr]')){e.preventDefault();if(!OVERON.ppr)toggleOver('ppr');e.target.closest('[data-qppr]').remove();return}
@@ -1113,12 +1184,15 @@ function refreshMarkers(){
 function fitAll(){if(!MAP)return;const pts=IDX.affaires.filter(s=>s.lat!=null).map(s=>[s.lat,s.lng]);if(pts.length>1)MAP.fitBounds(pts,{padding:[50,50],maxZoom:15});else if(pts.length===1)MAP.setView(pts[0],14)}
 /* Modes : placer, déplacer, mesures */
 let DRAW=null;
-function setMode(m){MODE=m;DRAW=null;LASTCLK=null;TEMP&&TEMP.clearLayers();$('#map').classList.toggle('picking',!!m&&m!=='erase');const H={place:'Cliquez sur la carte pour placer la nouvelle affaire — Échap pour annuler',move:'Cliquez sur la carte pour positionner l\u2019affaire — Échap pour annuler',dist:'Cote : cliquez les points — double-clic, clic droit ou Entrée pour terminer',area:'Aire : cliquez les sommets — double-clic, clic droit ou Entrée pour terminer',erase:'Gomme : cliquez sur une mesure pour l\u2019effacer',query:'Interroger : cliquez sur un lieu pour obtenir l\u2019adresse, le code INSEE, la parcelle et les PPR — Échap pour quitter'};const h=$('#modeHint');h.textContent=H[m]||'';h.style.display=m?'block':'none';if(MAP){if(m==='dist'||m==='area')MAP.doubleClickZoom.disable();else MAP.doubleClickZoom.enable();$('#map').style.cursor=m?'crosshair':''}renderTools()}
+async function mclearAll(){setView('map');if(!IDX.annots.length)return toast('Aucune mesure à effacer');if(!await appConfirm(`Effacer les ${IDX.annots.length} mesure(s) de la carte ?`,'Tout effacer'))return;IDX.annots=[];markIdx();renderAnnots();return toast('Mesures effacées','ok')}
+$('#modeHint').addEventListener('click',e=>{if(e.target.closest('[data-tool="mclear"]'))mclearAll()});
+function setMode(m){MODE=m;pnxCoverage(m==='pano'||!!PANO);DRAW=null;LASTCLK=null;TEMP&&TEMP.clearLayers();$('#map').classList.toggle('picking',!!m&&m!=='erase');const H={place:'Cliquez sur la carte pour placer la nouvelle affaire — Échap pour annuler',move:'Cliquez sur la carte pour positionner l\u2019affaire — Échap pour annuler',dist:'Cote : cliquez les points — double-clic, clic droit ou Entrée pour terminer',area:'Aire : cliquez les sommets — double-clic, clic droit ou Entrée pour terminer',erase:'Gomme : cliquez sur une mesure pour l\u2019effacer',query:'Interroger : cliquez sur un lieu pour obtenir l\u2019adresse, le code INSEE, la parcelle et les PPR — Échap pour quitter',pano:'Vue immersive : cliquez près d\u2019une rue tracée en cyan (photos Panoramax) — Échap pour quitter'};const h=$('#modeHint');h.innerHTML=esc(H[m]||'')+(m==='erase'?` <button class="btn sm danger" data-tool="mclear" style="margin-left:8px">${ic('trash',13)} Tout effacer</button>`:'');h.style.display=m?'block':'none';if(MAP){if(m==='dist'||m==='area')MAP.doubleClickZoom.disable();else MAP.doubleClickZoom.enable();$('#map').style.cursor=m?'crosshair':''}renderTools()}
 let LASTCLK=null;
 async function mapClick(e){
   const ll=e.latlng;
   if(MODE==='place'){setMode(null);newAffaireDialog({lat:ll.lat,lng:ll.lng});return}
   if(MODE==='query'){queryAt(ll);return}
+  if(MODE==='pano'){panoAt(ll.lat,ll.lng);return}
   if(MODE==='move'&&MOVEA){const a=MOVEA;MOVEA=null;setMode(null);a.deno.lat=ll.lat;a.deno.lng=ll.lng;A=a;touch();if(!a.deno.adresse){const r=await revGeo(ll.lat,ll.lng);if(r){a.deno.adresse=r;touch()}}RTAB='deno';showRapport();toast('Position mise à jour','ok');return}
   if(MODE==='dist'||MODE==='area'){
     const now=Date.now(),cp=e.containerPoint;
@@ -1176,7 +1250,7 @@ function renderTools(){
     Object.keys(BASEDEF).map(k=>tb('b:'+k,BASEDEF[k][0],'Fond de carte '+BASEDEF[k][0]+(k==='plan'?' (OpenStreetMap)':k==='sat'?' (satellite Esri)':k==='topo'?' (OpenTopoMap)':k==='hist'?' — photos aériennes historiques 1950-1965 (IGN)':k==='ortho'?' — photos aériennes actuelles (IGN)':' (IGN)'),curBase===k,'txt c-sky')).join('')+SEP+
     tb('o:cad','parcel','Surcouche : cadastre',OVERON.cad,'c-lime')+tb('o:pente','slope','Surcouche : pentes',OVERON.pente,'c-lime')+tb('o:com','commune','Surcouche : limites communales',OVERON.com,'c-lime')+tb('o:ppr','ppr','Surcouche : zonages réglementaires des PPR — inondation, mouvement de terrain, avalanche, feu de forêt, séisme, technologique (Géorisques). Utilisez « Interroger » pour lire la zone au point.',OVERON.ppr,'c-orange')+
     tb('l:wx','sunCloud',LIVEDEF.wx,!!LIVE.wx,'c-sky')+tb('l:radar','rain',LIVEDEF.radar,!!LIVE.radar,'c-sky')+SEP+
-    tb('m:dist','ruler','Mesure : cote / distance',MODE==='dist','c-amber')+tb('m:area','area','Mesure : aire',MODE==='area','c-amber')+tb('m:erase','eraser','Gomme : effacer une mesure',MODE==='erase','c-pink')+tb('m:query','locinfo','Interroger un lieu : adresse, commune, CP, code INSEE, parcelle cadastrale et risques (PPR)',MODE==='query','c-green')+tb('locate','gps','Ma position : centrer la carte sur l\u2019endroit où je suis (GPS du téléphone ou position du navigateur)',false,'c-sky')+tb('mclear','trash','Effacer toutes les mesures de la carte',false,'c-red'))+
+    tb('m:dist','ruler','Mesure : cote / distance',MODE==='dist','c-amber')+tb('m:area','area','Mesure : aire',MODE==='area','c-amber')+tb('m:erase','eraser','Gomme : effacer une mesure',MODE==='erase','c-pink')+tb('m:query','locinfo','Interroger un lieu : adresse, commune, CP, code INSEE, parcelle cadastrale et risques (PPR)',MODE==='query','c-green')+tb('m:pano','pano','Vue immersive (type Street View) : affiche les rues photographiées par Panoramax, puis cliquez pour regarder autour de vous',MODE==='pano','c-sky')+tb('locate','gps','Ma position : centrer la carte sur l\u2019endroit où je suis (GPS du téléphone ou position du navigateur)',false,'c-sky'))+
   pal('carnet','Carnet',
     tb('d:carnet','contacts','Carnet d\u2019adresses',DRAWER==='carnet','c-purple')+tb('d:ent','building','Fiche entreprise',DRAWER==='ent','c-purple')+tb('hub',`<svg class="ico" width="18" height="18" viewBox="0 0 850 1220" aria-hidden="true"><path fill="currentColor" d="${MPATH}"/><path fill="currentColor" transform="translate(0 384)" d="${MPATH}"/></svg>`,'MOMOgiciels — ouvrir Momohub','','c-mm'));
 }
@@ -1187,7 +1261,7 @@ $('#tools').addEventListener('click',async e=>{const ph=e.target.closest('[data-
   if(k==='place'){setView('map');return setMode(MODE==='place'?null:'place')}
   if(k==='fit'){setView('map');return fitAll()}
   if(k==='locate'){setView('map');return locateMe()}
-  if(k==='mclear'){setView('map');if(!IDX.annots.length)return toast('Aucune mesure à effacer');if(!await appConfirm(`Effacer les ${IDX.annots.length} mesure(s) de la carte ?`,'Tout effacer'))return;IDX.annots=[];markIdx();renderAnnots();return toast('Mesures effacées','ok')}
+  if(k==='mclear')return mclearAll();
   if(k==='b'){setView('map');return setBase(v)}
   if(k==='o'){setView('map');return toggleOver(v)}
   if(k==='l'){setView('map');return toggleLive(v)}
