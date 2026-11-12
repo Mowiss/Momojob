@@ -226,6 +226,7 @@ body.dragging #rapport.on{outline:2px dashed var(--acc2);outline-offset:-4px}
 body.pano-on #map{right:48%}body.pano-on #modeHint{left:26%}body.pano-on #liveLeg{right:calc(48% + 10px)}
 .panomk{background:none;border:0}
 @media(max-width:900px){#panoView{width:100%;min-width:0;top:45%}body.pano-on #map{right:0;bottom:55%}}
+.cdate{display:inline-flex;align-items:center;gap:5px;margin-left:10px;color:var(--mute)}.cdate input{width:auto}
 .dlink{color:#93c5fd;text-decoration:none;display:inline-flex;align-items:center;gap:4px}.dlink:hover{color:#fff;text-decoration:underline}.prel.over{border-color:var(--acc2);background:var(--acc-l)}.jal.over{border-color:var(--acc2);background:var(--acc-l)}
 .jnum{width:26px;height:26px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;color:#111827;font-weight:800;font-size:12px;flex:none}
 .kpis{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
@@ -528,6 +529,7 @@ const IC={
  print:'<path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/>',
  cube:'<path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/><path d="M12 12l8-4.5M12 12v9M12 12L4 7.5"/>',
  pano:'<circle cx="12" cy="12" r="9.5"/><ellipse cx="12" cy="12" rx="9.5" ry="3.6"/><circle cx="12" cy="12" r="1.6"/>',
+ road:'<path d="M8 3L4 21M16 3l4 18"/><path d="M12 4v3M12 10.5v3M12 17v3"/>',
  gps:'<path d="M3 11l18-8-8 18-2-8z"/>',
  trash:'<path d="M3 6h18M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6M10 11v6M14 11v6M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>',
  x:'<path d="M18 6L6 18M6 6l12 12"/>',
@@ -575,10 +577,10 @@ const appConfirm=(msg,ok='Confirmer',cls='danger')=>modal({title:'Confirmation',
 const ETATS={ao:{l:"Appel d'offre",c:'#2563EB',e:'inbox'},location:{l:'Location',c:'#DC2626',e:'truck'},etude:{l:'En étude',c:'#D97706',e:'cog'},travaux:{l:'En travaux',c:'#16A34A',e:'crane'},termine:{l:'Terminé',c:'#EC4899',e:'euro'},sanssuite:{l:'Sans suite',c:'#64748B',e:'ban'}};
 const DOC_ST={attendu:['Attendu','#d97706'],recu:['Reçu','#2563eb'],valide:['Validé','#16a34a'],envoye:['Envoyé','#7c3aed']};
 const DOC_CAT={dce:'DCE',plan:'Plan',etude:'Étude',devis:'Devis fournisseur',admin:'Administratif',photo:'Photo',cr:'Compte rendu',bim:'Maquette BIM (IFC)',autre:'Autre'};
-const PRIX_ST={demande:'Demandé',recu:'Reçu',retenu:'Retenu',ecarte:'Écarté'};
+const PRIX_ST={recu:'Reçu',retenu:'Retenu',ecarte:'Écarté'};
 const MAPU_URL='https://mowiss.github.io/Mapulator/';
 const LIENS=[['Mapulator©','#E8710A',MAPU_URL],['Balizator©','#CA9A04','https://mowiss.github.io/Balisator/'],["Gantt'O'matiC©",'#16A34A','https://mowiss.github.io/Ganttomatic/'],['Devizore©','#7C3AED','https://mowiss.github.io/Devisaurus-REX/'],['MOMOcad©','#2563EB','https://mowiss.github.io/Momocad/'],['MOMOdificator©','#111827','https://mowiss.github.io/MOMOdificator/'],['DOEConstructor©','#EC4899','https://mowiss.github.io/Doeconstructor/']];
-const RTABS=[['rapport','chart','Rapport de suivi'],['deno','tag','Dénomination'],['prelim','flask','Étude préliminaire'],['prix','receipt','Consultation des prix'],['metre','square','Métré'],['fact','euro','Devis & facturation'],['docs','folder','Documents'],['chrono','clock','Chronologie'],['jalons','flag','Jalons']];
+const RTABS=[['rapport','chart','Rapport de suivi'],['deno','tag','Dénomination'],['prelim','flask','Étude préliminaire'],['prix','receipt','Consultation des prix'],['metre','square','Métré'],['docs','folder','Documents'],['chrono','clock','Chronologie'],['jalons','flag','Jalons']];
 const dcFilled=v=>v!==undefined&&v!==''&&v!==false&&!(Array.isArray(v)&&!v.some(r=>r&&Object.values(r).some(x=>x!==''&&x!=null)));
 const STEPS=[
   {k:'deno',l:'Dénomination',ic:'tag',started:a=>!!(a.deno.adresse||a.deno.client.societe)},
@@ -738,7 +740,8 @@ function newAff(p={}){return {app:'MOMOwork-affaire',v:1,id:uid('AF-'),created:n
   prelim:{items:[{l:'Étude de sol (géotechnique)',v:'',txt:'',files:[]},{l:'Pollution des sols',v:'',txt:'',files:[]},{l:'Amiante / HAP (enrobés)',v:'',txt:'',files:[]},{l:'Hydrologie / hydrogéologie',v:'',txt:'',files:[]}]},
   prix:{cats:[{l:'Tuyaux & autres VRD',rows:[]},{l:'Éclairage',rows:[]},{l:'Clôtures',rows:[]},{l:'Espaces verts',rows:[]}]},
   metre:{map:null,rows:[]},docs:[],fact:[],jalons:tplJalons(),events:[],dc:{dc1:{},dc2:{},dc3:{},dc4:[]},steps:{}}}
-function normAff(a){const n=newAff();for(const k in n)if(a[k]==null)a[k]=n[k];for(const k in n.deno)if(a.deno[k]===undefined)a.deno[k]=n.deno[k];for(const k of ['dc1','dc2','dc3','dc4'])if(!a.dc[k])a.dc[k]=n.dc[k];return a}
+function normAff(a){const n=newAff();for(const k in n)if(a[k]==null)a[k]=n[k];for(const k in n.deno)if(a.deno[k]===undefined)a.deno[k]=n.deno[k];for(const k of ['dc1','dc2','dc3','dc4'])if(!a.dc[k])a.dc[k]=n.dc[k];
+  (a.prix&&a.prix.cats||[]).forEach(c=>{if(c.d==null){const ds=c.rows.map(r=>r.d).filter(Boolean).sort();c.d=ds[0]||''}c.rows.forEach(r=>{if(!PRIX_ST[r.st])r.st='recu'})});return a}
 function summary(a){const d=a.deno;const st=STEPS.map(s=>stepState(a,s));const jn=(a.jalons||[]).find(j=>!j.valide&&j.prevu);return {id:a.id,mtf:a.mtf||null,fs:a.fs||null,late:(a.fact||[]).filter(factLate).length,jnext:jn?{t:jn.titre,d:daysTo(jn.prevu)}:null,nom:d.nom,ref:d.ref,etat:d.etat,client:d.client.societe,adresse:d.adresse,lat:d.lat,lng:d.lng,echeance:d.echeance,repondu:!!d.repondu,avalider:!!d.avalider,steps:{done:st.filter(x=>x==='done').length,total:STEPS.length},docs:{ok:a.docs.filter(x=>x.st!=='attendu').length,total:a.docs.length},updated:a.updated}}
 function syncEntry(a){const s=summary(a);const i=IDX.affaires.findIndex(x=>x.id===a.id);if(i<0)IDX.affaires.push(s);else IDX.affaires[i]=s}
 function touchAff(a){a.updated=new Date().toISOString();DIRTY.add(a.id);DIRTYV.set(a.id,(DIRTYV.get(a.id)||0)+1);syncEntry(a);markIdx()}
@@ -934,7 +937,7 @@ const BASEDEF={ortho:['Ortho',IGN('ORTHOIMAGERY.ORTHOPHOTOS','image/jpeg'),{maxN
   topo:['Topo','https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',{maxNativeZoom:17,attribution:'© OpenTopoMap'}]};
 const GR='https://www.georisques.gouv.fr';
 const PPR_ZONES='PPRN_ZONE_INOND_FXX,PPRN_ZONE_SUBMAR_FXX,PPRN_ZONE_MVT_FXX,PPRN_ZONE_CAV_FXX_01,PPRN_ZONE_CAV_FXX_02,PPRN_ZONE_AVALANCHE_FXX,PPRN_ZONE_FEU_FXX,PPRN_ZONE_SEISME_FXX,PPRT_ZONE_RISQIND_FXX';
-const OVERDEF={ppr:['Zonages PPR',GR+'/services',{wms:{layers:PPR_ZONES,styles:'',format:'image/png',transparent:true,version:'1.3.0',opacity:.6,zIndex:350,attribution:'PPR © Géorisques'}}],
+const OVERDEF={routes:['Routes et voiries',IGN('TRANSPORTNETWORKS.ROADS','image/png'),{maxNativeZoom:18,opacity:.9,zIndex:350,attribution:'Routes © IGN'}],
   cad:['Cadastre',IGN('CADASTRALPARCELS.PARCELLAIRE_EXPRESS','image/png','PCI%20vecteur'),{maxNativeZoom:19}],
   pente:['Pentes',IGN('GEOGRAPHICALGRIDSYSTEMS.SLOPES.MOUNTAIN'),{maxNativeZoom:17,opacity:.55}],
   com:['Communes',IGN('LIMITES_ADMINISTRATIVES_EXPRESS.LATEST'),{maxNativeZoom:18}]};
@@ -1158,7 +1161,7 @@ async function qMore(pop,seq,lat,lng,insee){
     const d=(g.data||[])[0];const rl=[...new Set((d&&d.risques_detail||[]).map(x=>x.libelle_risque_long).filter(Boolean))];
     h+=rl.length?`<ul class="qpl">${rl.map(x=>`<li><b>${esc(x)}</b></li>`).join('')}</ul>`:'<div class="mute">Aucun risque recensé pour la commune.</div>';
   }catch(e){if(seq!==QSEQ)return;h+=`<div class="mute">Géorisques indisponible — ${esc(netMsg(e))}</div>`}
-  h+=`<div class="qbtns"><a class="btn sm" href="${rep}" target="_blank" rel="noopener">${ic('ppr',13)} Rapport Géorisques</a>${OVERON.ppr?'':`<button class="btn sm" data-qppr="1">Afficher les zonages</button>`}</div>`;
+  h+=`<div class="qbtns"><a class="btn sm" href="${rep}" target="_blank" rel="noopener">${ic('ppr',13)} Rapport Géorisques</a></div>`;
   qSet(pop,seq,'qrisk',h);
 }
 const qBtns=(lat,lng,label)=>`<div class="qbtns"><button class="btn sm pri" data-qcreate="1">${ic('plus',14)} Créer une affaire ici</button><button class="btn sm" data-qpano="${lat},${lng}" title="Regarder autour de ce point (photos Panoramax, sinon Google Street View)">${ic('pano',14)} Vue immersive</button>${label?`<button class="btn sm" data-qcopy="${esc(label)}">${ic('file',13)} Copier l\u2019adresse</button>`:''}</div>`;
@@ -1169,7 +1172,6 @@ document.addEventListener('click',async e=>{
   const gs=e.target.closest('[data-gsv]');if(gs){e.preventDefault();const [la,ln]=gs.dataset.gsv.split(',').map(Number);openGSV(la,ln);return}
   if(e.target.closest('[data-qparmeas]')){e.preventDefault();const q=QLAST||{};if(q.parcPts&&q.parcPts.length>=3){IDX.annots.push({id:uid('M-'),type:'area',pts:q.parcPts.slice(0,-1)});markIdx();renderAnnots();toast('Parcelle ajoutée aux mesures : '+measLabel('area',q.parcPts.slice(0,-1)),'ok')}return}
   if(e.target.closest('[data-qparfit]')){e.preventDefault();if(QPAR)MAP.fitBounds(QPAR.getBounds(),{padding:[60,60],maxZoom:19});return}
-  if(e.target.closest('[data-qppr]')){e.preventDefault();if(!OVERON.ppr)toggleOver('ppr');e.target.closest('[data-qppr]').remove();return}
   const k=e.target.closest('[data-qcopy]');if(k){e.preventDefault();try{await navigator.clipboard.writeText(k.dataset.qcopy);toast('Copié : '+k.dataset.qcopy,'ok')}catch(x){toast('Copie impossible','err')}}
 });
 function refreshMarkers(){
@@ -1248,7 +1250,7 @@ function renderTools(){
     tb('new','plus','Nouvelle affaire',false,'c-green')+tb('place','pin','Placer une affaire sur la carte',MODE==='place','c-green')+tb('fit','target','Voir toutes les affaires',false,'c-green'))+
   pal('affichage','Affichage',
     Object.keys(BASEDEF).map(k=>tb('b:'+k,BASEDEF[k][0],'Fond de carte '+BASEDEF[k][0]+(k==='plan'?' (OpenStreetMap)':k==='sat'?' (satellite Esri)':k==='topo'?' (OpenTopoMap)':k==='hist'?' — photos aériennes historiques 1950-1965 (IGN)':k==='ortho'?' — photos aériennes actuelles (IGN)':' (IGN)'),curBase===k,'txt c-sky')).join('')+SEP+
-    tb('o:cad','parcel','Surcouche : cadastre',OVERON.cad,'c-lime')+tb('o:pente','slope','Surcouche : pentes',OVERON.pente,'c-lime')+tb('o:com','commune','Surcouche : limites communales',OVERON.com,'c-lime')+tb('o:ppr','ppr','Surcouche : zonages réglementaires des PPR — inondation, mouvement de terrain, avalanche, feu de forêt, séisme, technologique (Géorisques). Utilisez « Interroger » pour lire la zone au point.',OVERON.ppr,'c-orange')+
+    tb('o:cad','parcel','Surcouche : cadastre',OVERON.cad,'c-lime')+tb('o:pente','slope','Surcouche : pentes',OVERON.pente,'c-lime')+tb('o:com','commune','Surcouche : limites communales',OVERON.com,'c-lime')+tb('o:routes','road','Surcouche : routes et voiries (réseau routier IGN, utile sur la vue aérienne)',OVERON.routes,'c-orange')+
     tb('l:wx','sunCloud',LIVEDEF.wx,!!LIVE.wx,'c-sky')+tb('l:radar','rain',LIVEDEF.radar,!!LIVE.radar,'c-sky')+SEP+
     tb('m:dist','ruler','Mesure : cote / distance',MODE==='dist','c-amber')+tb('m:area','area','Mesure : aire',MODE==='area','c-amber')+tb('m:erase','eraser','Gomme : effacer une mesure',MODE==='erase','c-pink')+tb('m:query','locinfo','Interroger un lieu : adresse, commune, CP, code INSEE, parcelle cadastrale et risques (PPR)',MODE==='query','c-green')+tb('m:pano','pano','Vue immersive (type Street View) : affiche les rues photographiées par Panoramax, puis cliquez pour regarder autour de vous',MODE==='pano','c-sky')+tb('locate','gps','Ma position : centrer la carte sur l\u2019endroit où je suis (GPS du téléphone ou position du navigateur)',false,'c-sky'))+
   pal('carnet','Carnet',
@@ -1416,7 +1418,6 @@ function tabRapport(){
      ${a.docs.slice(0,8).map((x,i)=>`<div class="kv"><span>${x.file?`<a href="#" class="dlink" data-act="dashDoc" data-i="${i}" title="Voir ${esc(x.file.name)}">${ic('eye',13)} ${esc(x.nom||x.file.name)}</a>`:esc(x.nom||'(sans nom)')}</span><b style="color:${DOC_ST[x.st][1]}">${DOC_ST[x.st][0]}</b></div>`).join('')||'<p class="mute">Aucun document suivi.</p>'}${a.docs.length>8?`<p class="mute">+ ${a.docs.length-8} autre(s)…</p>`:''}</div>
    <div class="card"><div class="cardh"><b>${ic('flask')} Étude préliminaire</b></div>${a.prelim.items.map((i,n)=>`<div class="kv"><span>${esc(i.l)}${(i.files||[]).map((x,k)=>` <a href="#" class="dlink" data-act="prelView" data-i="${n}" data-k="${k}" title="Voir ${esc(x.file.name)}">${ic('eye',13)}${i.files.length>1?k+1:''}</a>`).join('')}</span><b style="color:${i.v==='oui'?'var(--ok)':i.v==='nc'?'var(--warn)':'inherit'}">${{oui:'Oui',non:'Non',nc:'À déterminer'}[i.v]||'—'}</b></div>${i.v==='oui'&&i.txt?`<div class="mute" style="font-size:12px;margin:2px 0 6px">${esc(i.txt.slice(0,180))}${i.txt.length>180?'…':''}</div>`:''}`).join('')}</div>
    <div class="card"><div class="cardh"><b>${ic('receipt')} Consultation des prix</b></div>${prixRet.map(c=>`<div class="kv"><span>${esc(c.l)} (${c.n} ligne${c.n>1?'s':''})</span><b>${c.t?eur(c.t):'—'}</b></div>`).join('')}<div class="kv"><span><b>Total retenu</b></span><b style="color:var(--acc)">${eur(prixRet.reduce((t,c)=>t+c.t,0))}</b></div></div>
-   <div class="card"><div class="cardh"><b>${ic('euro')} Devis &amp; facturation</b><span class="sp"></span><button class="btn sm" data-act="tab" data-t="fact">Ouvrir</button></div>${(()=>{const T=factTotals(a),F=a.fact||[];return `<div class="kv"><span>Devis acceptés HT</span><b>${eur(T.acc)}</b></div><div class="kv"><span>Facturé HT</span><b>${eur(T.fac)}</b></div><div class="kv"><span>Reste à facturer HT</span><b>${eur(T.reste)}</b></div><div class="kv"><span>Encaissé / en attente TTC</span><b>${eur(T.paye)} / ${eur(T.du)}</b></div><div class="kv"><span>Pièces épinglées</span><b>${F.filter(x=>x.file).length}${T.late?` · <span style="color:#f87171">${T.late} en retard</span>`:''}</b></div>`})()}</div>
    <div class="card"><div class="cardh"><b>${ic('square')} Métré</b></div><div class="kv"><span>Projet Mapulator</span><b>${a.metre.map?esc(a.metre.map.name):'Non lié'}</b></div><div class="kv"><span>Postes</span><b>${a.metre.rows.length}</b></div><div class="kv"><span>Total métré HT</span><b style="color:var(--acc)">${eur(metreTotal(a))}</b></div></div>
    <div class="card"><div class="cardh"><b>${ic('flag')} Jalons</b><span class="sp"></span><button class="btn sm" data-act="tab" data-t="jalons">Ouvrir</button></div>${(()=>{const J=a.jalons||[];const ok=J.filter(j=>j.valide).length;return J.length?`<div class="bar" style="width:100%;margin:2px 0 8px"><i style="width:${Math.round(100*ok/J.length)}%"></i></div>`+J.slice(0,9).map((j,i)=>{const st=jState(j);return `<div class="kv"><span>${i+1}. ${esc(j.titre)}</span><b style="color:${JST[st][1]}">${JST[st][0]}${j.prevu&&!j.valide?' · '+fmtD(j.prevu):''}</b></div>`}).join(''):'<p class="mute">Aucun jalon.</p>'})()}</div>
    <div class="card"><div class="cardh"><b>${ic('todo')} Tâches ouvertes</b><span class="sp"></span><button class="btn sm" data-act="tab" data-t="chrono">Chronologie</button></div>${todos.slice(0,10).map(t=>`<label class="todo"><input type="checkbox" data-act="todoChk" data-id="${t.e.id}" data-i="${t.i}"><span>${esc(t.it.t)}</span><small class="mute">· ${esc(t.e.titre)}</small></label>`).join('')||'<p class="mute">Aucune tâche ouverte.</p>'}</div>
@@ -1478,9 +1479,9 @@ async function prelAttachFiles(i,files){const it=A.prelim.items[i];it.files=it.f
 
 /* --- Onglet Consultation des prix --- */
 function tabPrix(){
-  let h=stepBar('prix','Consultation des prix','Fournisseurs et produits par lot technique. Les lignes « Retenu » alimentent le total.')+`<datalist id="dl-fourn">${IDX.carnet.fourn.map(c=>`<option value="${esc(c.societe||c.nom)}">`).join('')}</datalist>`;
-  A.prix.cats.forEach((c,ci)=>{h+=`<div class="card"><div class="cardh"><input class="cattitle" data-b="prix.cats.${ci}.l" value="${esc(c.l)}"><span class="sp"></span><b id="pc-${ci}" class="mute"></b><button class="btn sm" data-act="prixAdd" data-c="${ci}">${ic('plus',14)} Ligne</button><button class="btn sm ghost" data-act="prixDelCat" data-c="${ci}" title="Supprimer la catégorie">${ic('trash',15)}</button></div>
-   <table class="tbl"><thead><tr><th>Fournisseur</th><th>Produit / référence</th><th>Unité</th><th>Qté</th><th>PU HT</th><th>Total HT</th><th>Statut</th><th>Date</th><th></th></tr></thead><tbody>${c.rows.map((r,ri)=>{const P=`prix.cats.${ci}.rows.${ri}`;return `<tr class="st-${r.st}"><td><input data-b="${P}.f" list="dl-fourn" value="${esc(r.f)}"></td><td><input data-b="${P}.p" value="${esc(r.p)}"></td><td><input class="w4" data-b="${P}.u" value="${esc(r.u)}"></td><td><input class="w6 num" data-b="${P}.q" data-rr="prix" value="${esc(r.q)}"></td><td><input class="w7 num" data-b="${P}.pu" data-rr="prix" value="${esc(r.pu)}"></td><td class="num" id="pt-${ci}-${ri}"></td><td><select data-b="${P}.st" data-rr="prix">${opts(PRIX_ST,r.st)}</select></td><td><input type="date" data-b="${P}.d" value="${esc(r.d)}"></td><td><button class="x" data-act="prixDel" data-c="${ci}" data-r="${ri}">${ic('x',14)}</button></td></tr>`}).join('')||'<tr><td colspan="9" class="empty">Aucune consultation</td></tr>'}</tbody></table></div>`});
+  let h=stepBar('prix','Consultation des prix','Une catégorie par lot ou fournisseur consulté, datée. Les lignes « Retenu » alimentent le total.');
+  A.prix.cats.forEach((c,ci)=>{h+=`<div class="card"><div class="cardh"><input class="cattitle" data-b="prix.cats.${ci}.l" value="${esc(c.l)}"><label class="cdate" title="Date de la consultation">${ic('calendar',14)}<input type="date" data-b="prix.cats.${ci}.d" value="${esc(c.d||'')}"></label><span class="sp"></span><b id="pc-${ci}" class="mute"></b><button class="btn sm" data-act="prixAdd" data-c="${ci}">${ic('plus',14)} Ligne</button><button class="btn sm ghost" data-act="prixDelCat" data-c="${ci}" title="Supprimer la catégorie">${ic('trash',15)}</button></div>
+   <table class="tbl"><thead><tr><th>Intitulé</th><th>Produit / référence</th><th>Unité</th><th>Qté</th><th>PU HT</th><th>Total HT</th><th>Statut</th><th></th></tr></thead><tbody>${c.rows.map((r,ri)=>{const P=`prix.cats.${ci}.rows.${ri}`;return `<tr class="st-${r.st}"><td><input data-b="${P}.f" value="${esc(r.f)}"></td><td><input data-b="${P}.p" value="${esc(r.p)}"></td><td><input class="w4" data-b="${P}.u" value="${esc(r.u)}"></td><td><input class="w6 num" data-b="${P}.q" data-rr="prix" value="${esc(r.q)}"></td><td><input class="w7 num" data-b="${P}.pu" data-rr="prix" value="${esc(r.pu)}"></td><td class="num" id="pt-${ci}-${ri}"></td><td><select data-b="${P}.st" data-rr="prix">${opts(PRIX_ST,r.st)}</select></td><td><button class="x" data-act="prixDel" data-c="${ci}" data-r="${ri}">${ic('x',14)}</button></td></tr>`}).join('')||'<tr><td colspan="9" class="empty">Aucune consultation</td></tr>'}</tbody></table></div>`});
   return h+`<div class="row"><button class="btn" data-act="prixAddCat">${ic('plus',15)} Catégorie</button><span class="sp"></span><div class="totbar">Total retenu : <b id="pc-all"></b></div></div>`;
 }
 function updPrix(){let all=0;A.prix.cats.forEach((c,ci)=>{let t=0;c.rows.forEach((r,ri)=>{const v=num(r.q)*num(r.pu);const el=$('#pt-'+ci+'-'+ri);if(el){el.textContent=v?eur(v):'';el.closest('tr').className='st-'+r.st}if(r.st==='retenu')t+=v});const e=$('#pc-'+ci);if(e)e.textContent='Retenu : '+eur(t);all+=t});const e=$('#pc-all');if(e)e.textContent=eur(all)}
@@ -1750,9 +1751,9 @@ const ACTS={
   prelView:b=>openData(A.prelim.items[+b.dataset.i].files[+b.dataset.k].file,false),
   prelDl:b=>openData(A.prelim.items[+b.dataset.i].files[+b.dataset.k].file,true),
   prelFDel:async b=>{if(!await appConfirm('Retirer ce rapport de l\u2019étude ?','Retirer'))return;A.prelim.items[+b.dataset.i].files.splice(+b.dataset.k,1);touch();renderRTab();renderRNav()},
-  prixAdd:b=>{A.prix.cats[+b.dataset.c].rows.push({f:'',p:'',u:'',q:'',pu:'',st:'demande',d:todayISO()});touch();renderRTab();renderRNav()},
+  prixAdd:b=>{A.prix.cats[+b.dataset.c].rows.push({f:'',p:'',u:'',q:'',pu:'',st:'recu'});touch();renderRTab();renderRNav()},
   prixDel:b=>{A.prix.cats[+b.dataset.c].rows.splice(+b.dataset.r,1);touch();renderRTab();renderRNav()},
-  prixAddCat:()=>{A.prix.cats.push({l:'Nouvelle catégorie',rows:[]});touch();renderRTab()},
+  prixAddCat:()=>{A.prix.cats.push({l:'Nouvelle catégorie',d:todayISO(),rows:[]});touch();renderRTab()},
   prixDelCat:async b=>{const c=A.prix.cats[+b.dataset.c];if(c.rows.length&&!await appConfirm(`Supprimer la catégorie « ${esc(c.l)} » et ses ${c.rows.length} ligne(s) ?`,'Supprimer'))return;A.prix.cats.splice(+b.dataset.c,1);touch();renderRTab()},
   metreAdd:()=>{A.metre.rows.push({des:'',u:'',q:'',pu:'',src:'man'});touch();renderPostes();renderRNav()},
   metreU:b=>{const r=A.metre.rows[+b.dataset.i];r.uSel=b.dataset.u||undefined;if(!r.uSel)delete r.uSel;touch();renderPostes()},
@@ -1811,7 +1812,6 @@ document.addEventListener('drop',async e=>{if(!hasFiles(e))return;e.preventDefau
   if(!A||!$('#rapport').classList.contains('on')){toast('Ouvrez une affaire pour y joindre des fichiers (ou déposez une sauvegarde .mmw / .mtf)','err');return}
   if(RTAB==='prelim'){const c=e.target.closest('[data-pdrop]');if(c)return prelAttachFiles(+c.dataset.pdrop,rest)}
   if(RTAB==='jalons'){const c=e.target.closest('[data-jdrop]');if(c)return jAttachFiles(+c.dataset.jdrop,rest)}
-  if(RTAB==='fact')return addFactFiles(rest);
   if(RTAB==='metre'){const maps=rest.filter(f=>/\.map$/i.test(f.name));if(maps.length)await dropMap(maps[0]);const plans=rest.filter(f=>!/\.map$/i.test(f.name)&&(/\.pdf$/i.test(f.name)||/^image\//.test(f.type)));
     if(plans.length&&MAPU.ready&&MSUB==='plan'){mapuPost({type:'addPlans',files:plans});toast(plans.length+' plan(s) envoyé(s) à Mapulator','ok')}
     const other=rest.filter(f=>!maps.includes(f)&&!(plans.includes(f)&&MAPU.ready&&MSUB==='plan'));if(!other.length)return;await addFiles(other);return}
@@ -2025,9 +2025,9 @@ function synthHTML(a){
   kv([['État',ETATS[d.etat].l+(d.repondu?' — offre remise':d.avalider?' — à valider':'')],['Échéance',fmtD(d.echeance)+(d.echeance&&!d.repondu&&d.etat!=='termine'&&d.etat!=='sanssuite'?` (${daysTo(d.echeance)<0?'dépassée':'J-'+daysTo(d.echeance)})`:'')],['Référence',esc(d.ref||'—')],['Adresse',esc(d.adresse||'—')],['Client',esc([d.client.societe,d.client.contact,d.client.tel,d.client.mail].filter(Boolean).join(' — ')||'—')],["Maître d'œuvre",esc([d.moe.societe,d.moe.contact,d.moe.tel].filter(Boolean).join(' — ')||'—')],['Typologie',Object.entries({demolition:'Démolition',terrassement:'Terrassement',vrd:'VRD'}).filter(([k])=>d.typo[k]).map(([,v])=>v).join(', ')||'—'],['Montant estimé HT',d.montant?eur(num(d.montant)):'—']])+
   `<h2>Avancement des étapes</h2><table><tr>${STEPS.map(st=>`<th>${st.l}</th>`).join('')}</tr><tr>${STEPS.map(st=>`<td>${{done:'Terminée',prog:'En cours',todo:'À faire'}[stepState(a,st)]}</td>`).join('')}</tr></table>`+
   `<h2>Étude préliminaire</h2><table>${a.prelim.items.map(i=>`<tr><th style="width:32%">${esc(i.l)}</th><td style="width:12%">${{oui:'Oui',non:'Non',nc:'À déterminer'}[i.v]||'—'}</td><td style="white-space:pre-wrap">${esc(i.txt||'')}${(i.files||[]).length?`<div style="color:#555;margin-top:3px">Rapport(s) joint(s) : ${i.files.map(x=>esc(x.nom||x.file.name)).join(', ')}</div>`:''}</td></tr>`).join('')}</table>`+
-  `<h2>Consultation des prix</h2>${a.prix.cats.filter(c=>c.rows.length).map(c=>`<b>${esc(c.l)}</b><table><tr><th>Fournisseur</th><th>Produit</th><th>U</th><th>Qté</th><th>PU HT</th><th>Total HT</th><th>Statut</th></tr>${c.rows.map(r=>`<tr><td>${esc(r.f)}</td><td>${esc(r.p)}</td><td>${esc(r.u)}</td><td>${esc(r.q)}</td><td>${r.pu?eur(num(r.pu)):''}</td><td>${num(r.q)*num(r.pu)?eur(num(r.q)*num(r.pu)):''}</td><td>${PRIX_ST[r.st]||''}</td></tr>`).join('')}</table>`).join('')||'<p>Aucune consultation.</p>'}`+
+  `<h2>Consultation des prix</h2>${a.prix.cats.filter(c=>c.rows.length).map(c=>`<b>${esc(c.l)}</b>${c.d?` <span style="color:#666">— consultation du ${fmtD(c.d)}</span>`:''}<table><tr><th>Intitulé</th><th>Produit</th><th>U</th><th>Qté</th><th>PU HT</th><th>Total HT</th><th>Statut</th></tr>${c.rows.map(r=>`<tr><td>${esc(r.f)}</td><td>${esc(r.p)}</td><td>${esc(r.u)}</td><td>${esc(r.q)}</td><td>${r.pu?eur(num(r.pu)):''}</td><td>${num(r.q)*num(r.pu)?eur(num(r.q)*num(r.pu)):''}</td><td>${PRIX_ST[r.st]||''}</td></tr>`).join('')}</table>`).join('')||'<p>Aucune consultation.</p>'}`+
   `<h2>Métré${a.metre.map?' — Mapulator : '+esc(a.metre.map.name):''}</h2>${a.metre.rows.length?`<table><tr><th>Désignation</th><th>U</th><th>Quantité</th><th>PU HT</th><th>Total HT</th></tr>${a.metre.rows.map(r=>`<tr><td>${esc(r.des)}${r.alt?` <small style="color:#666">(soit ${qfmt(num(r.uSel==='alt'?r.q:r.alt.q))} ${esc(r.uSel==='alt'?r.u:r.alt.u)})</small>`:''}</td><td>${esc(rU(r))}</td><td>${qfmt(num(rQ(r)))}</td><td>${r.pu?eur(num(r.pu)):''}</td><td>${num(rQ(r))*num(r.pu)?eur(num(rQ(r))*num(r.pu)):''}</td></tr>`).join('')}<tr><th colspan="4">Total HT</th><th>${eur(metreTotal(a))}</th></tr></table>`:'<p>Aucun poste.</p>'}`+
-  (()=>{const T=factTotals(a);return (a.fact||[]).length?`<h2>Devis &amp; facturation</h2><table><tr><th>Devis acceptés HT</th><th>Facturé HT</th><th>Reste à facturer HT</th><th>Encaissé TTC</th><th>En attente TTC</th></tr><tr><td>${eur(T.acc)}</td><td>${eur(T.fac)}</td><td>${eur(T.reste)}</td><td>${eur(T.paye)}</td><td>${eur(T.du)}</td></tr></table>`:''})()+
+  (()=>{const T=factTotals(a);return false?`<h2>Devis &amp; facturation</h2><table><tr><th>Devis acceptés HT</th><th>Facturé HT</th><th>Reste à facturer HT</th><th>Encaissé TTC</th><th>En attente TTC</th></tr><tr><td>${eur(T.acc)}</td><td>${eur(T.fac)}</td><td>${eur(T.reste)}</td><td>${eur(T.paye)}</td><td>${eur(T.du)}</td></tr></table>`:''})()+
   `<h2>Documents liés</h2>${a.docs.length?`<table><tr><th>Catégorie</th><th>Désignation</th><th>Statut</th><th>Attendu pour</th><th>Reçu le</th><th>Note</th></tr>${a.docs.map(x=>`<tr><td>${DOC_CAT[x.cat]||''}</td><td>${esc(x.nom)}${x.file?' (fichier joint)':''}</td><td>${DOC_ST[x.st][0]}</td><td>${fmtD(x.pour)}</td><td>${fmtD(x.recu)}</td><td>${esc(x.note)}</td></tr>`).join('')}</table>`:'<p>Aucun document suivi.</p>'}`+
   jalonsHTMLprint(a);
   const todos=[];a.events.forEach(e=>{if(e.type==='todo')e.items.forEach(it=>{if(!it.done)todos.push(esc(it.t)+' <i>('+esc(e.titre)+')</i>')})});
@@ -2216,7 +2216,6 @@ function tkAlertes(){
     if(s.etat==='ao'&&!s.repondu&&s.echeance){const j=daysTo(s.echeance);
       if(j!=null&&j<0&&j>=-7)out.push({t:`Échéance dépassée de ${-j} j — ${s.nom}`,id:s.id,w:3});
       else if(j!=null&&j<=3)out.push({t:`Remise ${j===0?'AUJOURD’HUI':'J-'+j} (${fmtD(s.echeance)}) — ${s.nom}`,id:s.id,w:j===0?3:2})}
-    if(s.late)out.push({t:`${s.late} facture(s) en retard — ${s.nom}`,id:s.id,w:2});
     /* Offre déjà remise, affaire terminée ou sans suite : plus d'alerte (sauf factures en retard) */
     if((s.etat==='ao'&&s.repondu)||s.etat==='termine'||s.etat==='sanssuite')return;
     if(s.avalider)out.push({t:`À valider — ${s.nom}`,id:s.id,w:1});
