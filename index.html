@@ -738,7 +738,7 @@ function newAff(p={}){return {app:'MOMOwork-affaire',v:1,id:uid('AF-'),created:n
   deno:{nom:p.nom||'Nouvelle affaire',ref:'',adresse:p.adresse||'',lat:p.lat??null,lng:p.lng??null,etat:p.etat||'ao',echeance:p.echeance||'',repondu:false,avalider:false,
     client:Object.assign({societe:'',contact:'',tel:'',mail:'',secteur:'',adresse:''},p.client||{}),moe:{societe:'',contact:'',tel:'',mail:''},contacts:[],typo:{demolition:false,terrassement:false,vrd:false},montant:'',debut:'',duree:'',notes:''},
   prelim:{items:[{l:'Étude de sol (géotechnique)',v:'',txt:'',files:[]},{l:'Pollution des sols',v:'',txt:'',files:[]},{l:'Amiante / HAP (enrobés)',v:'',txt:'',files:[]},{l:'Hydrologie / hydrogéologie',v:'',txt:'',files:[]}]},
-  prix:{cats:[{l:'Tuyaux & autres VRD',rows:[]},{l:'Éclairage',rows:[]},{l:'Clôtures',rows:[]},{l:'Espaces verts',rows:[]}]},
+  prix:{cats:[{l:'Nouvelle catégorie',d:todayISO(),rows:[]}]},
   metre:{map:null,rows:[]},docs:[],fact:[],jalons:tplJalons(),events:[],dc:{dc1:{},dc2:{},dc3:{},dc4:[]},steps:{}}}
 function normAff(a){const n=newAff();for(const k in n)if(a[k]==null)a[k]=n[k];for(const k in n.deno)if(a.deno[k]===undefined)a.deno[k]=n.deno[k];for(const k of ['dc1','dc2','dc3','dc4'])if(!a.dc[k])a.dc[k]=n.dc[k];
   (a.prix&&a.prix.cats||[]).forEach(c=>{if(c.d==null){const ds=c.rows.map(r=>r.d).filter(Boolean).sort();c.d=ds[0]||''}c.rows.forEach(r=>{if(!PRIX_ST[r.st])r.st='recu'})});return a}
