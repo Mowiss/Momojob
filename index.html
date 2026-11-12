@@ -227,6 +227,9 @@ body.pano-on #map{right:48%}body.pano-on #modeHint{left:26%}body.pano-on #liveLe
 .panomk{background:none;border:0}
 @media(max-width:900px){#panoView{width:100%;min-width:0;top:45%}body.pano-on #map{right:0;bottom:55%}}
 .cdate{display:inline-flex;align-items:center;gap:5px;margin-left:10px;color:var(--mute)}.cdate input{width:auto}
+#db-mapw{position:relative;height:360px;border:1px solid var(--line);border-radius:8px;overflow:hidden}#db-map{position:absolute;inset:0}#db-map.pick{cursor:crosshair}
+.rtdot{background:none;border:0}.rtdot span{display:flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;border:2px solid #fff;color:#fff;font:700 11px system-ui}
+.grid.g5{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}@media(max-width:900px){.grid.g5{grid-template-columns:repeat(2,1fr)}}
 .dlink{color:#93c5fd;text-decoration:none;display:inline-flex;align-items:center;gap:4px}.dlink:hover{color:#fff;text-decoration:underline}.prel.over{border-color:var(--acc2);background:var(--acc-l)}.jal.over{border-color:var(--acc2);background:var(--acc-l)}
 .jnum{width:26px;height:26px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;color:#111827;font-weight:800;font-size:12px;flex:none}
 .kpis{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
@@ -529,7 +532,7 @@ const IC={
  print:'<path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/>',
  cube:'<path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/><path d="M12 12l8-4.5M12 12v9M12 12L4 7.5"/>',
  pano:'<circle cx="12" cy="12" r="9.5"/><ellipse cx="12" cy="12" rx="9.5" ry="3.6"/><circle cx="12" cy="12" r="1.6"/>',
- road:'<path d="M8 3L4 21M16 3l4 18"/><path d="M12 4v3M12 10.5v3M12 17v3"/>',
+ route:'<circle cx="6" cy="18" r="2.5"/><circle cx="18" cy="6" r="2.5"/><path d="M8.5 18H15a3.5 3.5 0 0 0 0-7H9a3.5 3.5 0 0 1 0-7h6.5"/>',
  gps:'<path d="M3 11l18-8-8 18-2-8z"/>',
  trash:'<path d="M3 6h18M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6M10 11v6M14 11v6M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>',
  x:'<path d="M18 6L6 18M6 6l12 12"/>',
@@ -580,7 +583,7 @@ const DOC_CAT={dce:'DCE',plan:'Plan',etude:'Étude',devis:'Devis fournisseur',ad
 const PRIX_ST={recu:'Reçu',retenu:'Retenu',ecarte:'Écarté'};
 const MAPU_URL='https://mowiss.github.io/Mapulator/';
 const LIENS=[['Mapulator©','#E8710A',MAPU_URL],['Balizator©','#CA9A04','https://mowiss.github.io/Balisator/'],["Gantt'O'matiC©",'#16A34A','https://mowiss.github.io/Ganttomatic/'],['Devizore©','#7C3AED','https://mowiss.github.io/Devisaurus-REX/'],['MOMOcad©','#2563EB','https://mowiss.github.io/Momocad/'],['MOMOdificator©','#111827','https://mowiss.github.io/MOMOdificator/'],['DOEConstructor©','#EC4899','https://mowiss.github.io/Doeconstructor/']];
-const RTABS=[['rapport','chart','Rapport de suivi'],['deno','tag','Dénomination'],['prelim','flask','Étude préliminaire'],['prix','receipt','Consultation des prix'],['metre','square','Métré'],['docs','folder','Documents'],['chrono','clock','Chronologie'],['jalons','flag','Jalons']];
+const RTABS=[['rapport','chart','Rapport de suivi'],['deno','tag','Dénomination'],['prelim','flask','Étude préliminaire'],['prix','receipt','Consultation des prix'],['metre','square','Métré'],['debale','truck','Débale'],['docs','folder','Documents'],['chrono','clock','Chronologie'],['jalons','flag','Jalons']];
 const dcFilled=v=>v!==undefined&&v!==''&&v!==false&&!(Array.isArray(v)&&!v.some(r=>r&&Object.values(r).some(x=>x!==''&&x!=null)));
 const STEPS=[
   {k:'deno',l:'Dénomination',ic:'tag',started:a=>!!(a.deno.adresse||a.deno.client.societe)},
@@ -732,6 +735,9 @@ let IDX=null;const CACHE=new Map(),DIRTY=new Set();
 let IDXV=0,NEXTAUTO=null,AUTOERR='';const DIRTYV=new Map();
 let IDXDIRTY=false,LASTSAVE=null,A=null,RTAB='rapport',DCTAB='dc1',VIEW='map',MODE=null,MOVEA=null,DRAWER=null,saving=false;
 const FILT={ao:0,location:true,etude:true,travaux:true,termine:true,sanssuite:true,q:''};
+/* Les filtres d'états et les surcouches restent réglés d'une ouverture à l'autre */
+try{const f=JSON.parse(localStorage.getItem('momojob_filt')||'null');if(f)for(const k in FILT)if(k!=='q'&&f[k]!==undefined)FILT[k]=f[k]}catch(e){}
+const saveFilt=()=>{try{const f={...FILT};delete f.q;localStorage.setItem('momojob_filt',JSON.stringify(f))}catch(e){}};
 function newIndex(){return {app:'MOMOwork',v:1,created:new Date().toISOString(),settings:{autoVal:5,autoUnit:'min',center:null},entreprise:{ca:[{},{},{}],eff:[{},{},{}]},carnet:{clients:[],st:[],fourn:[]},annots:[],affaires:[]}}
 function normIdx(){const n=newIndex();for(const k in n)if(IDX[k]==null)IDX[k]=n[k];for(const k in n.settings)if(IDX.settings[k]===undefined)IDX.settings[k]=n.settings[k];for(const k in n.carnet)if(!IDX.carnet[k])IDX.carnet[k]=[];if(!IDX.entreprise.ca)IDX.entreprise.ca=[{},{},{}];if(!IDX.entreprise.eff)IDX.entreprise.eff=[{},{},{}]}
 function newAff(p={}){return {app:'MOMOwork-affaire',v:1,id:uid('AF-'),created:new Date().toISOString(),updated:new Date().toISOString(),
@@ -739,7 +745,7 @@ function newAff(p={}){return {app:'MOMOwork-affaire',v:1,id:uid('AF-'),created:n
     client:Object.assign({societe:'',contact:'',tel:'',mail:'',secteur:'',adresse:''},p.client||{}),moe:{societe:'',contact:'',tel:'',mail:''},contacts:[],typo:{demolition:false,terrassement:false,vrd:false},montant:'',debut:'',duree:'',notes:''},
   prelim:{items:[{l:'Étude de sol (géotechnique)',v:'',txt:'',files:[]},{l:'Pollution des sols',v:'',txt:'',files:[]},{l:'Amiante / HAP (enrobés)',v:'',txt:'',files:[]},{l:'Hydrologie / hydrogéologie',v:'',txt:'',files:[]}]},
   prix:{cats:[{l:'Nouvelle catégorie',d:todayISO(),rows:[]}]},
-  metre:{map:null,rows:[]},docs:[],fact:[],jalons:tplJalons(),events:[],dc:{dc1:{},dc2:{},dc3:{},dc4:[]},steps:{}}}
+  metre:{map:null,rows:[]},debale:{load:15,unload:5,coef:1.25,day:8,capa:'',sites:[]},docs:[],fact:[],jalons:tplJalons(),events:[],dc:{dc1:{},dc2:{},dc3:{},dc4:[]},steps:{}}}
 function normAff(a){const n=newAff();for(const k in n)if(a[k]==null)a[k]=n[k];for(const k in n.deno)if(a.deno[k]===undefined)a.deno[k]=n.deno[k];for(const k of ['dc1','dc2','dc3','dc4'])if(!a.dc[k])a.dc[k]=n.dc[k];
   (a.prix&&a.prix.cats||[]).forEach(c=>{if(c.d==null){const ds=c.rows.map(r=>r.d).filter(Boolean).sort();c.d=ds[0]||''}c.rows.forEach(r=>{if(!PRIX_ST[r.st])r.st='recu'})});return a}
 function summary(a){const d=a.deno;const st=STEPS.map(s=>stepState(a,s));const jn=(a.jalons||[]).find(j=>!j.valide&&j.prevu);return {id:a.id,mtf:a.mtf||null,fs:a.fs||null,late:(a.fact||[]).filter(factLate).length,jnext:jn?{t:jn.titre,d:daysTo(jn.prevu)}:null,nom:d.nom,ref:d.ref,etat:d.etat,client:d.client.societe,adresse:d.adresse,lat:d.lat,lng:d.lng,echeance:d.echeance,repondu:!!d.repondu,avalider:!!d.avalider,steps:{done:st.filter(x=>x==='done').length,total:STEPS.length},docs:{ok:a.docs.filter(x=>x.st!=='attendu').length,total:a.docs.length},updated:a.updated}}
@@ -956,6 +962,7 @@ function initMap(){
   MAP=L.map('map',{zoomControl:false,maxZoom:20}).setView(IDX.settings.center?IDX.settings.center.c:[44.559,6.079],IDX.settings.center?IDX.settings.center.z:10);
   for(const k in BASEDEF)BASES[k]=L.tileLayer(BASEDEF[k][1],{maxZoom:20,...BASEDEF[k][2]});
   for(const k in OVERDEF)OVERS[k]=OVERDEF[k][2].wms?L.tileLayer.wms(OVERDEF[k][1],{maxZoom:20,...OVERDEF[k][2].wms}):L.tileLayer(OVERDEF[k][1],{maxZoom:20,...OVERDEF[k][2]});
+  try{const o=JSON.parse(localStorage.getItem('momojob_over')||'{}');for(const k in OVERDEF)if(o[k]){OVERON[k]=true;OVERS[k].addTo(MAP)}}catch(e){}
   BASES[curBase].addTo(MAP);
   ANNOT=L.layerGroup().addTo(MAP);TEMP=L.layerGroup().addTo(MAP);MARKERS=L.layerGroup().addTo(MAP);
   /* Un « clic » d'outil = appui + relâché du clic gauche (la carte ne se déplace plus qu'au clic molette, donc un petit glissement compte comme un clic) */
@@ -979,7 +986,7 @@ function locateMe(){
    e=>toast(e.code===1?'Position refusée : autorisez la localisation pour ce site':'Position introuvable','err'),{enableHighAccuracy:true,timeout:15000,maximumAge:60000});
 }
 function setBase(k){MAP.removeLayer(BASES[curBase]);curBase=k;BASES[k].addTo(MAP);BASES[k].bringToBack();renderTools()}
-function toggleOver(k){OVERON[k]=!OVERON[k];if(OVERON[k])OVERS[k].addTo(MAP);else MAP.removeLayer(OVERS[k]);renderTools()}
+function toggleOver(k){OVERON[k]=!OVERON[k];try{localStorage.setItem('momojob_over',JSON.stringify(OVERON))}catch(e){}if(OVERON[k])OVERS[k].addTo(MAP);else MAP.removeLayer(OVERS[k]);renderTools()}
 function pinStyle(s){if(s.avalider)return {c:'#F4C20D',e:'search'};if(s.etat==='ao'&&s.repondu)return {c:'#38BDF8',e:'clock'};return ETATS[s.etat]||ETATS.ao}
 function pinIcon(s){const st=pinStyle(s),icol=st.c==='#F4C20D'?'#a16207':st.c==='#38BDF8'?'#0369a1':st.c;
   return L.divIcon({className:'pin',iconSize:[36,46],iconAnchor:[18,45],tooltipAnchor:[0,-40],html:`<svg width="36" height="46" viewBox="0 0 36 46" xmlns="http://www.w3.org/2000/svg"><path d="M18 44.6S33.6 29.4 33.6 17.6A15.6 15.6 0 0 0 2.4 17.6C2.4 29.4 18 44.6 18 44.6Z" fill="${st.c}" stroke="#0b1220" stroke-opacity=".6" stroke-width="1.6" stroke-linejoin="round"/><circle cx="18" cy="17.6" r="11.2" fill="#fff"/><svg x="10.2" y="9.8" width="15.6" height="15.6" viewBox="0 0 24 24" fill="none" stroke="${icol}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">${IC[st.e]||''}</svg></svg>`})}
@@ -989,7 +996,7 @@ function visible(s){
   return FILT[s.etat]!==false;
 }
 /* ============ Données en direct (sans clé) : météo des pins, radar pluie, antennes HS, Bison Futé ============ */
-let LIVE={};try{LIVE=JSON.parse(localStorage.getItem('momojob_live')||'{}')}catch(e){}
+let LIVE={};try{LIVE=JSON.parse(localStorage.getItem('momojob_live')||'{}')}catch(e){}delete LIVE.radar;
 const LV={wx:null,radar:null,ant:null,bf:null},LVS={},LVT={};
 const LIVEDEF={wx:'Météo sur les pins (Open-Meteo)',radar:'Radar de pluie — 2 dernières heures (RainViewer)'};
 delete LIVE.ant;delete LIVE.bf;
@@ -1040,6 +1047,86 @@ async function liveRadar(){
     if(LV.radar)LV.radar.setUrl(url);else LV.radar=L.tileLayer(url,{opacity:.65,maxNativeZoom:7,maxZoom:20,zIndex:400,attribution:'Radar © RainViewer'}).addTo(MAP);
     liveStatus('radar',`Radar pluie — image de ${new Date(f.time*1000).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})} (vue départementale)`);
   }catch(e){liveStatus('radar','Radar : '+netMsg(e),true)}
+}
+/* ============ Itinéraires (IGN Géoplateforme, secours OSRM — sans clé) ============ */
+async function routeAB(a,b){
+  try{const j=await jget(`https://data.geopf.fr/navigation/itineraire?resource=bdtopo-osrm&profile=car&optimization=fastest&start=${a[1]},${a[0]}&end=${b[1]},${b[0]}&geometryFormat=geojson&distanceUnit=meter&timeUnit=minute`);
+    if(j&&j.distance!=null&&j.duration!=null){let d=+j.distance,t=+j.duration;const du=(j.distanceUnit||'meter').toLowerCase(),tu=(j.timeUnit||'minute').toLowerCase();if(du.startsWith('k'))d*=1000;if(tu.startsWith('s'))t/=60;else if(tu.startsWith('h'))t*=60;
+      return {dist:d,dur:t,geom:(j.geometry&&j.geometry.coordinates||[]).map(c=>[c[1],c[0]]),src:'IGN'}}throw new Error('réponse IGN vide')}
+  catch(e){const j=await jget(`https://router.project-osrm.org/route/v1/driving/${a[1]},${a[0]};${b[1]},${b[0]}?overview=full&geometries=geojson`);const r=j.routes&&j.routes[0];if(!r)throw new Error('aucun itinéraire trouvé');
+    return {dist:r.distance,dur:r.duration/60,geom:r.geometry.coordinates.map(c=>[c[1],c[0]]),src:'OSRM'}}
+}
+const fmtKm=m=>(m/1000).toLocaleString('fr-FR',{maximumFractionDigits:1})+' km';
+const fmtMin=t=>{t=Math.round(t);return t<60?t+' min':Math.floor(t/60)+' h '+String(t%60).padStart(2,'0')};
+let RTL=null,RTA=null;
+const routeDot=(ll,c,t)=>L.marker(ll,{interactive:false,icon:L.divIcon({className:'rtdot',iconSize:[22,22],iconAnchor:[11,11],html:`<span style="background:${c}">${t}</span>`})});
+async function routeClick(ll){
+  if(!RTA||RTL&&RTL._done){if(RTL)MAP.removeLayer(RTL);RTL=L.layerGroup().addTo(MAP);RTA=[ll.lat,ll.lng];routeDot(ll,'#22c55e','A').addTo(RTL);return}
+  const B=[ll.lat,ll.lng];routeDot(ll,'#ef4444','B').addTo(RTL);RTL._done=true;
+  try{const r=await routeAB(RTA,B);
+    L.polyline(r.geom,{color:'#fb923c',weight:5,opacity:.9,interactive:false}).addTo(RTL);
+    L.popup({className:'qpop',autoClose:false,closeOnClick:false}).setLatLng(B).setContent(`<div class="qp"><b>${ic('route',14)} Itinéraire</b>
+      <div class="qr"><span>Distance</span><b>${fmtKm(r.dist)}</b></div><div class="qr"><span>Trajet VL</span><b>${fmtMin(r.dur)}</b></div><div class="qr"><span>Trajet poids lourd (× 1,25)</span><b>${fmtMin(r.dur*1.25)}</b></div><div class="qr"><span>Aller-retour PL</span><b>${fmtMin(r.dur*2.5)}</b></div>
+      <div class="mute" style="font-size:11px;margin-top:4px">Calcul ${r.src==='IGN'?'IGN Géoplateforme':'OSRM'} — cliquez à nouveau pour un autre itinéraire.</div></div>`).addTo(RTL);
+  }catch(e){toast('Itinéraire impossible : '+netMsg(e),'err')}
+  RTA=null;
+}
+/* ============ Débale : chantier (A) → débale (B), temps de cycle et rotations par jour ============ */
+let DBM=null,DBL=null,DBPICK=null;
+const DBCOL=['#fb923c','#38bdf8','#a78bfa','#f472b6','#facc15'];
+const kpi=(l,v,c='')=>`<div class="kpi"><small>${l}</small><b style="${c?'color:'+c:''}">${v}</b></div>`;
+function dbCalc(d,s){if(s.dur==null)return null;const cyc=2*s.dur*num(d.coef||1)+num(d.load)+num(d.unload);const rot=cyc>0?Math.floor(num(d.day)*60/cyc):0;return {cyc,rot,vol:num(d.capa)?rot*num(d.capa):null}}
+function tabDebale(){
+  if(!A.debale)A.debale={load:15,unload:5,coef:1.25,day:8,capa:'',sites:[]};const d=A.debale,a=A.deno;
+  let h=`<div class="tabhead"><div><h2>Débale</h2><p class="mute">Le chantier est le point A. Placez une ou plusieurs débales sur la carte : MomoJOB calcule le trajet, le temps de cycle d\u2019un camion et le nombre de rotations par journée.</p></div></div>`;
+  h+=`<div class="card"><div class="cardh"><b>${ic('cog',15)} Hypothèses</b></div><div class="grid g5">
+    <label class="f"><span>Chargement (min)</span><input class="num" data-b="debale.load" data-rr="debale" value="${esc(d.load)}"></label>
+    <label class="f"><span>Déchargement (min)</span><input class="num" data-b="debale.unload" data-rr="debale" value="${esc(d.unload)}"></label>
+    <label class="f"><span title="Les temps calculés sont ceux d\u2019un véhicule léger : on les majore pour un poids lourd">Coef. poids lourd</span><input class="num" data-b="debale.coef" data-rr="debale" value="${esc(d.coef)}"></label>
+    <label class="f"><span>Journée (h)</span><input class="num" data-b="debale.day" data-rr="debale" value="${esc(d.day)}"></label>
+    <label class="f"><span>Capacité camion (m³, facultatif)</span><input class="num" data-b="debale.capa" data-rr="debale" value="${esc(d.capa)}" placeholder="ex. 12"></label></div></div>`;
+  h+=`<div class="card"><div class="cardh"><b>${ic('map',15)} Carte</b><span class="mute" id="db-hint">${a.lat==null?'Le chantier n\u2019a pas de position : renseignez-la dans Dénomination.':'Cliquez « Placer une débale » puis sur la carte (déplacer : clic molette).'}</span><span class="sp"></span><button class="btn sm pri" data-act="dbPick" ${a.lat==null?'disabled':''}>${ic('pin',14)} Placer une débale</button></div><div id="db-mapw"><div id="db-map"></div></div></div>`;
+  h+=`<div id="db-sites">${dbSitesHTML()}</div>`;
+  return h;
+}
+function dbSitesHTML(){const d=A.debale;if(!d.sites.length)return '<p class="mute">Aucune débale définie.</p>';
+  return d.sites.map((s,i)=>{const c=dbCalc(d,s);return `<div class="card dbs" style="border-left:4px solid ${DBCOL[i%DBCOL.length]}"><div class="cardh"><input class="cattitle" data-b="debale.sites.${i}.nom" value="${esc(s.nom||'')}" placeholder="Nom de la débale (ISDI, plateforme…)"><span class="sp"></span><button class="btn sm" data-act="dbMove" data-i="${i}" title="Repositionner sur la carte">${ic('pin',14)} Déplacer</button><button class="btn sm ghost" data-act="dbDel" data-i="${i}" title="Supprimer">${ic('trash',15)}</button></div>
+   <div class="mute" style="margin:-4px 0 8px">${esc(s.adresse||'')}</div>
+   ${s.err?`<div class="mute" style="color:var(--err)">Itinéraire impossible : ${esc(s.err)} <button class="btn sm" data-act="dbCalc" data-i="${i}">Réessayer</button></div>`:s.dur==null?'<div class="mute">Calcul de l\u2019itinéraire…</div>':`<div class="kpis">
+     ${kpi('Distance',fmtKm(s.dist))}${kpi('Trajet aller (PL)',fmtMin(s.dur*num(d.coef||1)))}${kpi('Temps de cycle',fmtMin(c.cyc))}${kpi('Rotations / jour',`<span id="db-rot-${i}">${c.rot}</span>`,'#fb923c')}${c.vol!=null?kpi('Volume / jour / camion',c.vol.toLocaleString('fr-FR')+' m³','#34d399'):''}</div>
+     <div class="mute" style="font-size:12px;margin-top:6px">Cycle = 2 × ${fmtMin(s.dur)} × ${String(d.coef).replace('.',',')} + ${num(d.load)} min chargement + ${num(d.unload)} min déchargement · itinéraire ${s.src==='IGN'?'IGN Géoplateforme':'OSRM'}</div>`}</div>`}).join('');
+}
+function updDebale(){const e=$('#db-sites');if(e)e.innerHTML=dbSitesHTML()}
+function mountDebale(){
+  if(DBM){DBM.remove();DBM=null}const el=$('#db-map');if(!el||typeof L==='undefined')return;
+  DBM=L.map(el,{zoomControl:true,attributionControl:false,maxZoom:20});
+  L.tileLayer(BASEDEF[curBase==='sat'?'sat':curBase][1],{maxZoom:20,...BASEDEF[curBase==='sat'?'sat':curBase][2]}).addTo(DBM);
+  if(OVERON.routes)L.tileLayer(OVERDEF.routes[1],{maxZoom:20,...OVERDEF.routes[2]}).addTo(DBM);
+  middlePan(DBM);DBM.doubleClickZoom.disable();
+  DBL=L.layerGroup().addTo(DBM);
+  DBM.on('click',e=>{if(DBPICK==null)return;const i=DBPICK;DBPICK=null;$('#db-map').classList.remove('pick');dbSet(i,e.latlng.lat,e.latlng.lng)});
+  dbDraw(true);
+  A.debale.sites.forEach((s,i)=>{if(s.dur==null&&!s.err&&A.deno.lat!=null)dbRoute(i)});
+  setTimeout(()=>DBM&&DBM.invalidateSize(),60);
+}
+function dbDraw(fit){
+  if(!DBM)return;DBL.clearLayers();const a=A.deno,B=[];
+  if(a.lat!=null){routeDot([a.lat,a.lng],'#22c55e','A').addTo(DBL);B.push([a.lat,a.lng])}
+  A.debale.sites.forEach((s,i)=>{const c=DBCOL[i%DBCOL.length];if(s._geom)L.polyline(s._geom,{color:c,weight:5,opacity:.85,interactive:false}).addTo(DBL);
+    const m=L.marker([s.lat,s.lng],{draggable:true,icon:L.divIcon({className:'rtdot',iconSize:[22,22],iconAnchor:[11,11],html:`<span style="background:${c}">${i+1}</span>`})}).addTo(DBL);
+    m.bindTooltip(esc(s.nom||'Débale '+(i+1)));m.on('dragend',e=>{const p=e.target.getLatLng();dbSet(i,p.lat,p.lng)});B.push([s.lat,s.lng]);(s._geom||[]).forEach(p=>B.push(p))});
+  if(fit){if(B.length>1)DBM.fitBounds(B,{padding:[30,30],maxZoom:16});else if(B.length)DBM.setView(B[0],13);else DBM.setView(MAP?MAP.getCenter():[44.559,6.079],10)}
+}
+async function dbSet(i,lat,lng){
+  const d=A.debale;if(i===-1){d.sites.push({id:uid('D-'),nom:'Débale '+(d.sites.length+1),lat,lng});i=d.sites.length-1}else Object.assign(d.sites[i],{lat,lng});
+  const s=d.sites[i];s.dur=null;s.dist=null;s.err=null;s._geom=null;touch();updDebale();dbDraw(false);
+  revGeo(lat,lng).then(r=>{if(r){s.adresse=r;touch();updDebale()}});
+  dbRoute(i);
+}
+async function dbRoute(i){const s=A.debale.sites[i],a=A.deno,aff=A;if(!s||a.lat==null)return;
+  try{const r=await routeAB([a.lat,a.lng],[s.lat,s.lng]);Object.assign(s,{dist:Math.round(r.dist),dur:Math.round(r.dur*10)/10,src:r.src,err:null});s._geom=r.geom}
+  catch(e){s.err=netMsg(e)}
+  if(A!==aff)return;touch();updDebale();dbDraw(true);
 }
 /* ============ Vue immersive : Panoramax (photos de rue libres, sans clé) + secours Google Street View ============ */
 const PNX='https://explore.panoramax.fr/api';
@@ -1188,13 +1275,14 @@ function fitAll(){if(!MAP)return;const pts=IDX.affaires.filter(s=>s.lat!=null).m
 let DRAW=null;
 async function mclearAll(){setView('map');if(!IDX.annots.length)return toast('Aucune mesure à effacer');if(!await appConfirm(`Effacer les ${IDX.annots.length} mesure(s) de la carte ?`,'Tout effacer'))return;IDX.annots=[];markIdx();renderAnnots();return toast('Mesures effacées','ok')}
 $('#modeHint').addEventListener('click',e=>{if(e.target.closest('[data-tool="mclear"]'))mclearAll()});
-function setMode(m){MODE=m;pnxCoverage(m==='pano'||!!PANO);DRAW=null;LASTCLK=null;TEMP&&TEMP.clearLayers();$('#map').classList.toggle('picking',!!m&&m!=='erase');const H={place:'Cliquez sur la carte pour placer la nouvelle affaire — Échap pour annuler',move:'Cliquez sur la carte pour positionner l\u2019affaire — Échap pour annuler',dist:'Cote : cliquez les points — double-clic, clic droit ou Entrée pour terminer',area:'Aire : cliquez les sommets — double-clic, clic droit ou Entrée pour terminer',erase:'Gomme : cliquez sur une mesure pour l\u2019effacer',query:'Interroger : cliquez sur un lieu pour obtenir l\u2019adresse, le code INSEE, la parcelle et les PPR — Échap pour quitter',pano:'Vue immersive : cliquez près d\u2019une rue tracée en cyan (photos Panoramax) — Échap pour quitter'};const h=$('#modeHint');h.innerHTML=esc(H[m]||'')+(m==='erase'?` <button class="btn sm danger" data-tool="mclear" style="margin-left:8px">${ic('trash',13)} Tout effacer</button>`:'');h.style.display=m?'block':'none';if(MAP){if(m==='dist'||m==='area')MAP.doubleClickZoom.disable();else MAP.doubleClickZoom.enable();$('#map').style.cursor=m?'crosshair':''}renderTools()}
+function setMode(m){if(m!=='route'&&RTL){MAP.removeLayer(RTL);RTL=null;RTA=null}MODE=m;pnxCoverage(m==='pano'||!!PANO);DRAW=null;LASTCLK=null;TEMP&&TEMP.clearLayers();$('#map').classList.toggle('picking',!!m&&m!=='erase');const H={place:'Cliquez sur la carte pour placer la nouvelle affaire — Échap pour annuler',move:'Cliquez sur la carte pour positionner l\u2019affaire — Échap pour annuler',dist:'Cote : cliquez les points — double-clic, clic droit ou Entrée pour terminer',area:'Aire : cliquez les sommets — double-clic, clic droit ou Entrée pour terminer',erase:'Gomme : cliquez sur une mesure pour l\u2019effacer',query:'Interroger : cliquez sur un lieu pour obtenir l\u2019adresse, le code INSEE, la parcelle et les PPR — Échap pour quitter',route:'Itinéraire : cliquez le point de départ, puis l\u2019arrivée — Échap pour quitter',pano:'Vue immersive : cliquez près d\u2019une rue tracée en cyan (photos Panoramax) — Échap pour quitter'};const h=$('#modeHint');h.innerHTML=esc(H[m]||'')+(m==='erase'?` <button class="btn sm danger" data-tool="mclear" style="margin-left:8px">${ic('trash',13)} Tout effacer</button>`:'');h.style.display=m?'block':'none';if(MAP){if(m==='dist'||m==='area')MAP.doubleClickZoom.disable();else MAP.doubleClickZoom.enable();$('#map').style.cursor=m?'crosshair':''}renderTools()}
 let LASTCLK=null;
 async function mapClick(e){
   const ll=e.latlng;
   if(MODE==='place'){setMode(null);newAffaireDialog({lat:ll.lat,lng:ll.lng});return}
   if(MODE==='query'){queryAt(ll);return}
   if(MODE==='pano'){panoAt(ll.lat,ll.lng);return}
+  if(MODE==='route'){routeClick(ll);return}
   if(MODE==='move'&&MOVEA){const a=MOVEA;MOVEA=null;setMode(null);a.deno.lat=ll.lat;a.deno.lng=ll.lng;A=a;touch();if(!a.deno.adresse){const r=await revGeo(ll.lat,ll.lng);if(r){a.deno.adresse=r;touch()}}RTAB='deno';showRapport();toast('Position mise à jour','ok');return}
   if(MODE==='dist'||MODE==='area'){
     const now=Date.now(),cp=e.containerPoint;
@@ -1251,7 +1339,7 @@ function renderTools(){
   pal('affichage','Affichage',
     Object.keys(BASEDEF).map(k=>tb('b:'+k,BASEDEF[k][0],'Fond de carte '+BASEDEF[k][0]+(k==='plan'?' (OpenStreetMap)':k==='sat'?' (satellite Esri)':k==='topo'?' (OpenTopoMap)':k==='hist'?' — photos aériennes historiques 1950-1965 (IGN)':k==='ortho'?' — photos aériennes actuelles (IGN)':' (IGN)'),curBase===k,'txt c-sky')).join('')+SEP+
     tb('o:cad','parcel','Surcouche : cadastre',OVERON.cad,'c-lime')+tb('o:pente','slope','Surcouche : pentes',OVERON.pente,'c-lime')+tb('o:com','commune','Surcouche : limites communales',OVERON.com,'c-lime')+tb('o:routes','road','Surcouche : routes et voiries (réseau routier IGN, utile sur la vue aérienne)',OVERON.routes,'c-orange')+
-    tb('l:wx','sunCloud',LIVEDEF.wx,!!LIVE.wx,'c-sky')+tb('l:radar','rain',LIVEDEF.radar,!!LIVE.radar,'c-sky')+SEP+
+    tb('l:wx','sunCloud',LIVEDEF.wx,!!LIVE.wx,'c-sky')+tb('m:route','route','Itinéraire : cliquez le départ puis l\u2019arrivée — distance et temps de trajet (VL et poids lourd)',MODE==='route','c-orange')+SEP+
     tb('m:dist','ruler','Mesure : cote / distance',MODE==='dist','c-amber')+tb('m:area','area','Mesure : aire',MODE==='area','c-amber')+tb('m:erase','eraser','Gomme : effacer une mesure',MODE==='erase','c-pink')+tb('m:query','locinfo','Interroger un lieu : adresse, commune, CP, code INSEE, parcelle cadastrale et risques (PPR)',MODE==='query','c-green')+tb('m:pano','pano','Vue immersive (type Street View) : affiche les rues photographiées par Panoramax, puis cliquez pour regarder autour de vous',MODE==='pano','c-sky')+tb('locate','gps','Ma position : centrer la carte sur l\u2019endroit où je suis (GPS du téléphone ou position du navigateur)',false,'c-sky'))+
   pal('carnet','Carnet',
     tb('d:carnet','contacts','Carnet d\u2019adresses',DRAWER==='carnet','c-purple')+tb('d:ent','building','Fiche entreprise',DRAWER==='ent','c-purple')+tb('hub',`<svg class="ico" width="18" height="18" viewBox="0 0 850 1220" aria-hidden="true"><path fill="currentColor" d="${MPATH}"/><path fill="currentColor" transform="translate(0 384)" d="${MPATH}"/></svg>`,'MOMOgiciels — ouvrir Momohub','','c-mm'));
@@ -1282,7 +1370,7 @@ function renderFbar(){
   renderCount();
 }
 function renderCount(){const n=IDX.affaires.filter(visible).length;const c=$('#count');if(c)c.textContent=`${n} / ${IDX.affaires.length} affaire${IDX.affaires.length>1?'s':''}`}
-$('#fbar').addEventListener('click',e=>{const b=e.target.closest('[data-f]');if(!b)return;const k=b.dataset.f;if(k==='ao')FILT.ao=(FILT.ao+1)%5;else FILT[k]=FILT[k]===false;renderFbar();refreshAll()});
+$('#fbar').addEventListener('click',e=>{const b=e.target.closest('[data-f]');if(!b)return;const k=b.dataset.f;if(k==='ao')FILT.ao=(FILT.ao+1)%5;else FILT[k]=FILT[k]===false;saveFilt();renderFbar();refreshAll()});
 $('#fbar').addEventListener('input',e=>{if(e.target.id==='search'){FILT.q=e.target.value.trim().toLowerCase();refreshAll()}});
 function refreshAll(){refreshMarkers();renderCount();if(VIEW==='list')renderList();if(VIEW==='agenda')renderAgenda()}
 
@@ -1388,8 +1476,8 @@ function updPin(){const s=summary(A),st=pinStyle(s);const p=$('#rpin');if(p){p.s
 function renderRNav(){
   $('#rnav').innerHTML=RTABS.map(([k,icn,l])=>{const s=STEPS.find(x=>x.k===k);const st=s?stepState(A,s):'';return `<button class="rn ${RTAB===k?'on':''}" data-act="tab" data-t="${k}" title="${esc(l)}">${ic(icn,17)}<span class="t">${l}</span>${s?`<span class="sd ${st}"></span>`:''}</button>`}).join('')+`<div class="rn-sep"></div><button class="rn rn-dl" data-act="dlOpen" title="Télécharger le dossier de réponse client ou le dossier complet (ZIP)">${ic('download',17)}<span class="t">Télécharger</span></button>`;
 }
-function renderRTab(){$('#rcontent').classList.toggle('full',RTAB==='metre');const f={rapport:tabRapport,deno:tabDeno,prelim:tabPrelim,prix:tabPrix,metre:tabMetre,fact:tabFact,docs:tabDocs,chrono:tabChrono,admin:tabAdmin,jalons:jalonsHTMLtab}[RTAB];$('#rcontent').innerHTML=f();$('#rcontent').scrollTop=0;
-  if(RTAB==='rapport')loadMeteo(A);if(RTAB==='prix')updPrix();if(RTAB==='metre')mountMapu();if(RTAB==='admin')updCalc()}
+function renderRTab(){$('#rcontent').classList.toggle('full',RTAB==='metre');const f={rapport:tabRapport,deno:tabDeno,prelim:tabPrelim,prix:tabPrix,metre:tabMetre,debale:tabDebale,fact:tabFact,docs:tabDocs,chrono:tabChrono,admin:tabAdmin,jalons:jalonsHTMLtab}[RTAB];$('#rcontent').innerHTML=f();$('#rcontent').scrollTop=0;
+  if(RTAB==='rapport')loadMeteo(A);if(RTAB==='prix')updPrix();if(RTAB==='metre')mountMapu();if(RTAB==='debale')mountDebale();if(RTAB==='admin')updCalc()}
 const stepBar=(k,t,desc)=>{const done=!!A.steps[k];return `<div class="tabhead"><div><h2>${t}</h2>${desc?`<p class="mute">${desc}</p>`:''}</div><button class="stepbtn ${done?'done':''}" data-act="stepDone" data-k="${k}">${done?ic('check',15)+' Étape terminée':ic('circle',15)+' Marquer l\u2019étape terminée'}</button></div>`};
 const fi=(p,label,o={})=>{const v=getPath(A,p)??'';const ex=`${o.list?`list="${o.list}"`:''} ${o.rr?`data-rr="${o.rr}"`:''} ${o.ac?`data-ac="${o.ac}"`:''} placeholder="${esc(o.ph||'')}"`;
   if(o.t==='ta')return `<label class="f ${o.cls||''}"><span>${label}</span><textarea data-b="${p}" rows="${o.rows||3}" ${ex}>${esc(v)}</textarea></label>`;
@@ -1419,6 +1507,7 @@ function tabRapport(){
    <div class="card"><div class="cardh"><b>${ic('flask')} Étude préliminaire</b></div>${a.prelim.items.map((i,n)=>`<div class="kv"><span>${esc(i.l)}${(i.files||[]).map((x,k)=>` <a href="#" class="dlink" data-act="prelView" data-i="${n}" data-k="${k}" title="Voir ${esc(x.file.name)}">${ic('eye',13)}${i.files.length>1?k+1:''}</a>`).join('')}</span><b style="color:${i.v==='oui'?'var(--ok)':i.v==='nc'?'var(--warn)':'inherit'}">${{oui:'Oui',non:'Non',nc:'À déterminer'}[i.v]||'—'}</b></div>${i.v==='oui'&&i.txt?`<div class="mute" style="font-size:12px;margin:2px 0 6px">${esc(i.txt.slice(0,180))}${i.txt.length>180?'…':''}</div>`:''}`).join('')}</div>
    <div class="card"><div class="cardh"><b>${ic('receipt')} Consultation des prix</b></div>${prixRet.map(c=>`<div class="kv"><span>${esc(c.l)} (${c.n} ligne${c.n>1?'s':''})</span><b>${c.t?eur(c.t):'—'}</b></div>`).join('')}<div class="kv"><span><b>Total retenu</b></span><b style="color:var(--acc)">${eur(prixRet.reduce((t,c)=>t+c.t,0))}</b></div></div>
    <div class="card"><div class="cardh"><b>${ic('square')} Métré</b></div><div class="kv"><span>Projet Mapulator</span><b>${a.metre.map?esc(a.metre.map.name):'Non lié'}</b></div><div class="kv"><span>Postes</span><b>${a.metre.rows.length}</b></div><div class="kv"><span>Total métré HT</span><b style="color:var(--acc)">${eur(metreTotal(a))}</b></div></div>
+   ${(a.debale&&a.debale.sites.length)?`<div class="card"><div class="cardh"><b>${ic('truck')} Débale</b><span class="sp"></span><button class="btn sm" data-act="tab" data-t="debale">Ouvrir</button></div>${a.debale.sites.map(x=>{const c=dbCalc(a.debale,x);return `<div class="kv"><span>${esc(x.nom||'Débale')}${x.dist!=null?` <small class="mute">${fmtKm(x.dist)} · ${fmtMin(x.dur*num(a.debale.coef||1))}</small>`:''}</span><b style="color:#fb923c">${c?c.rot+' rotation'+(c.rot>1?'s':'')+' / jour':'—'}</b></div>`}).join('')}</div>`:''}
    <div class="card"><div class="cardh"><b>${ic('flag')} Jalons</b><span class="sp"></span><button class="btn sm" data-act="tab" data-t="jalons">Ouvrir</button></div>${(()=>{const J=a.jalons||[];const ok=J.filter(j=>j.valide).length;return J.length?`<div class="bar" style="width:100%;margin:2px 0 8px"><i style="width:${Math.round(100*ok/J.length)}%"></i></div>`+J.slice(0,9).map((j,i)=>{const st=jState(j);return `<div class="kv"><span>${i+1}. ${esc(j.titre)}</span><b style="color:${JST[st][1]}">${JST[st][0]}${j.prevu&&!j.valide?' · '+fmtD(j.prevu):''}</b></div>`}).join(''):'<p class="mute">Aucun jalon.</p>'})()}</div>
    <div class="card"><div class="cardh"><b>${ic('todo')} Tâches ouvertes</b><span class="sp"></span><button class="btn sm" data-act="tab" data-t="chrono">Chronologie</button></div>${todos.slice(0,10).map(t=>`<label class="todo"><input type="checkbox" data-act="todoChk" data-id="${t.e.id}" data-i="${t.i}"><span>${esc(t.it.t)}</span><small class="mute">· ${esc(t.e.titre)}</small></label>`).join('')||'<p class="mute">Aucune tâche ouverte.</p>'}</div>
   </div>`;
@@ -1757,6 +1846,10 @@ const ACTS={
   prixDelCat:async b=>{const c=A.prix.cats[+b.dataset.c];if(c.rows.length&&!await appConfirm(`Supprimer la catégorie « ${esc(c.l)} » et ses ${c.rows.length} ligne(s) ?`,'Supprimer'))return;A.prix.cats.splice(+b.dataset.c,1);touch();renderRTab()},
   metreAdd:()=>{A.metre.rows.push({des:'',u:'',q:'',pu:'',src:'man'});touch();renderPostes();renderRNav()},
   metreU:b=>{const r=A.metre.rows[+b.dataset.i];r.uSel=b.dataset.u||undefined;if(!r.uSel)delete r.uSel;touch();renderPostes()},
+  dbPick:()=>{DBPICK=-1;$('#db-map').classList.add('pick');toast('Cliquez sur la carte à l\u2019emplacement de la débale')},
+  dbMove:b=>{DBPICK=+b.dataset.i;$('#db-map').classList.add('pick');toast('Cliquez sur la carte au nouvel emplacement (ou faites glisser le repère)')},
+  dbDel:async b=>{const i=+b.dataset.i;if(!await appConfirm('Supprimer cette débale ?','Supprimer'))return;A.debale.sites.splice(i,1);touch();updDebale();dbDraw(false)},
+  dbCalc:b=>{const s=A.debale.sites[+b.dataset.i];s.err=null;updDebale();dbRoute(+b.dataset.i)},
   metreDel:b=>{A.metre.rows.splice(+b.dataset.i,1);touch();renderPostes();renderRNav()},
   mapImport:async()=>{const [f]=await pickFile('.map,.json');if(!f)return;const text=await readText(f);let d;try{d=JSON.parse(text)}catch(e){return toast('Fichier .map illisible','err')}
     if(!(d.plans&&d.plans.length)&&!d.imageBase64)return toast('Ce .map ne contient aucun plan','err');
@@ -1783,7 +1876,7 @@ const ACTS={
   dcPrint:()=>printDC(),
   entOpen:()=>openDrawer('ent')
 };
-const RR={fact:()=>updFact(),factrow:()=>renderRTab(),pin:()=>{updPin()},prix:updPrix,metre:updMetre,calc:updCalc,nav:renderRNav};
+const RR={debale:()=>{clearTimeout(RR._db);RR._db=setTimeout(updDebale,250)},fact:()=>updFact(),factrow:()=>renderRTab(),pin:()=>{updPin()},prix:updPrix,metre:updMetre,calc:updCalc,nav:renderRNav};
 const R=$('#rapport');
 const LEAVE=new Set(['tab','close','place','printSynth','exportAff','delAff']);
 R.addEventListener('click',async e=>{const b=e.target.closest('[data-act]');if(!b||b.tagName==='INPUT'&&b.type!=='checkbox')return;const f=ACTS[b.dataset.act];if(!f)return;e.preventDefault();if(RTAB==='metre'&&LEAVE.has(b.dataset.act)&&!(b.dataset.act==='tab'&&b.dataset.t==='metre'))await flushMapu();f(b)});
@@ -2026,6 +2119,7 @@ function synthHTML(a){
   `<h2>Avancement des étapes</h2><table><tr>${STEPS.map(st=>`<th>${st.l}</th>`).join('')}</tr><tr>${STEPS.map(st=>`<td>${{done:'Terminée',prog:'En cours',todo:'À faire'}[stepState(a,st)]}</td>`).join('')}</tr></table>`+
   `<h2>Étude préliminaire</h2><table>${a.prelim.items.map(i=>`<tr><th style="width:32%">${esc(i.l)}</th><td style="width:12%">${{oui:'Oui',non:'Non',nc:'À déterminer'}[i.v]||'—'}</td><td style="white-space:pre-wrap">${esc(i.txt||'')}${(i.files||[]).length?`<div style="color:#555;margin-top:3px">Rapport(s) joint(s) : ${i.files.map(x=>esc(x.nom||x.file.name)).join(', ')}</div>`:''}</td></tr>`).join('')}</table>`+
   `<h2>Consultation des prix</h2>${a.prix.cats.filter(c=>c.rows.length).map(c=>`<b>${esc(c.l)}</b>${c.d?` <span style="color:#666">— consultation du ${fmtD(c.d)}</span>`:''}<table><tr><th>Intitulé</th><th>Produit</th><th>U</th><th>Qté</th><th>PU HT</th><th>Total HT</th><th>Statut</th></tr>${c.rows.map(r=>`<tr><td>${esc(r.f)}</td><td>${esc(r.p)}</td><td>${esc(r.u)}</td><td>${esc(r.q)}</td><td>${r.pu?eur(num(r.pu)):''}</td><td>${num(r.q)*num(r.pu)?eur(num(r.q)*num(r.pu)):''}</td><td>${PRIX_ST[r.st]||''}</td></tr>`).join('')}</table>`).join('')||'<p>Aucune consultation.</p>'}`+
+  ((a.debale&&a.debale.sites.length)?`<h2>Débale</h2><p style="color:#555">Chargement ${num(a.debale.load)} min · déchargement ${num(a.debale.unload)} min · coef. poids lourd ${String(a.debale.coef).replace('.',',')} · journée ${num(a.debale.day)} h${num(a.debale.capa)?' · camion '+num(a.debale.capa)+' m³':''}</p><table><tr><th>Débale</th><th>Distance</th><th>Trajet PL</th><th>Cycle</th><th>Rotations / jour</th>${num(a.debale.capa)?'<th>Volume / jour / camion</th>':''}</tr>${a.debale.sites.map(x=>{const c=dbCalc(a.debale,x);return `<tr><td>${esc(x.nom||'')}<br><small style="color:#666">${esc(x.adresse||'')}</small></td><td>${x.dist!=null?fmtKm(x.dist):''}</td><td>${x.dur!=null?fmtMin(x.dur*num(a.debale.coef||1)):''}</td><td>${c?fmtMin(c.cyc):''}</td><td>${c?c.rot:''}</td>${num(a.debale.capa)?`<td>${c&&c.vol!=null?c.vol+' m³':''}</td>`:''}</tr>`}).join('')}</table>`:'')+
   `<h2>Métré${a.metre.map?' — Mapulator : '+esc(a.metre.map.name):''}</h2>${a.metre.rows.length?`<table><tr><th>Désignation</th><th>U</th><th>Quantité</th><th>PU HT</th><th>Total HT</th></tr>${a.metre.rows.map(r=>`<tr><td>${esc(r.des)}${r.alt?` <small style="color:#666">(soit ${qfmt(num(r.uSel==='alt'?r.q:r.alt.q))} ${esc(r.uSel==='alt'?r.u:r.alt.u)})</small>`:''}</td><td>${esc(rU(r))}</td><td>${qfmt(num(rQ(r)))}</td><td>${r.pu?eur(num(r.pu)):''}</td><td>${num(rQ(r))*num(r.pu)?eur(num(rQ(r))*num(r.pu)):''}</td></tr>`).join('')}<tr><th colspan="4">Total HT</th><th>${eur(metreTotal(a))}</th></tr></table>`:'<p>Aucun poste.</p>'}`+
   (()=>{const T=factTotals(a);return false?`<h2>Devis &amp; facturation</h2><table><tr><th>Devis acceptés HT</th><th>Facturé HT</th><th>Reste à facturer HT</th><th>Encaissé TTC</th><th>En attente TTC</th></tr><tr><td>${eur(T.acc)}</td><td>${eur(T.fac)}</td><td>${eur(T.reste)}</td><td>${eur(T.paye)}</td><td>${eur(T.du)}</td></tr></table>`:''})()+
   `<h2>Documents liés</h2>${a.docs.length?`<table><tr><th>Catégorie</th><th>Désignation</th><th>Statut</th><th>Attendu pour</th><th>Reçu le</th><th>Note</th></tr>${a.docs.map(x=>`<tr><td>${DOC_CAT[x.cat]||''}</td><td>${esc(x.nom)}${x.file?' (fichier joint)':''}</td><td>${DOC_ST[x.st][0]}</td><td>${fmtD(x.pour)}</td><td>${fmtD(x.recu)}</td><td>${esc(x.note)}</td></tr>`).join('')}</table>`:'<p>Aucun document suivi.</p>'}`+
