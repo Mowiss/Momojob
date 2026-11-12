@@ -229,7 +229,8 @@ body.pano-on #map{right:48%}body.pano-on #modeHint{left:26%}body.pano-on #liveLe
 .cdate{display:inline-flex;align-items:center;gap:5px;margin-left:10px;color:var(--mute)}.cdate input{width:auto}
 #db-mapw{position:relative;height:360px;border:1px solid var(--line);border-radius:8px;overflow:hidden}#db-map{position:absolute;inset:0}#db-map.pick{cursor:crosshair}
 .rtdot{background:none;border:0}.rtdot span{display:flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;border:2px solid #fff;color:#fff;font:700 11px system-ui}
-.grid.g5{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}@media(max-width:900px){.grid.g5{grid-template-columns:repeat(2,1fr)}}
+.grid.g6{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px}@media(max-width:900px){.grid.g6{grid-template-columns:repeat(2,1fr)}}
+.ralts{display:flex;flex-direction:column;gap:4px;margin-top:4px}.ralts.row{flex-direction:row;flex-wrap:wrap}.ralts button{display:flex;justify-content:space-between;gap:12px;align-items:center;background:var(--pan2);border:1px solid var(--line);border-radius:6px;color:var(--ink);padding:5px 9px;font:inherit;font-size:12px;cursor:pointer;text-align:left}.ralts button span{color:var(--mute)}.ralts button.on{border-color:#fb923c;background:rgba(251,146,60,.15)}.ralts button.on span{color:#fdba74}
 .dlink{color:#93c5fd;text-decoration:none;display:inline-flex;align-items:center;gap:4px}.dlink:hover{color:#fff;text-decoration:underline}.prel.over{border-color:var(--acc2);background:var(--acc-l)}.jal.over{border-color:var(--acc2);background:var(--acc-l)}
 .jnum{width:26px;height:26px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;color:#111827;font-weight:800;font-size:12px;flex:none}
 .kpis{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
@@ -745,7 +746,7 @@ function newAff(p={}){return {app:'MOMOwork-affaire',v:1,id:uid('AF-'),created:n
     client:Object.assign({societe:'',contact:'',tel:'',mail:'',secteur:'',adresse:''},p.client||{}),moe:{societe:'',contact:'',tel:'',mail:''},contacts:[],typo:{demolition:false,terrassement:false,vrd:false},montant:'',debut:'',duree:'',notes:''},
   prelim:{items:[{l:'Étude de sol (géotechnique)',v:'',txt:'',files:[]},{l:'Pollution des sols',v:'',txt:'',files:[]},{l:'Amiante / HAP (enrobés)',v:'',txt:'',files:[]},{l:'Hydrologie / hydrogéologie',v:'',txt:'',files:[]}]},
   prix:{cats:[{l:'Nouvelle catégorie',d:todayISO(),rows:[]}]},
-  metre:{map:null,rows:[]},debale:{load:15,unload:5,coef:1.25,day:8,capa:'',sites:[]},docs:[],fact:[],jalons:tplJalons(),events:[],dc:{dc1:{},dc2:{},dc3:{},dc4:[]},steps:{}}}
+  metre:{map:null,rows:[]},debale:{load:15,unload:5,coef:1.25,day:8,capa:'',capaT:'',sites:[]},docs:[],fact:[],jalons:tplJalons(),events:[],dc:{dc1:{},dc2:{},dc3:{},dc4:[]},steps:{}}}
 function normAff(a){const n=newAff();for(const k in n)if(a[k]==null)a[k]=n[k];for(const k in n.deno)if(a.deno[k]===undefined)a.deno[k]=n.deno[k];for(const k of ['dc1','dc2','dc3','dc4'])if(!a.dc[k])a.dc[k]=n.dc[k];
   (a.prix&&a.prix.cats||[]).forEach(c=>{if(c.d==null){const ds=c.rows.map(r=>r.d).filter(Boolean).sort();c.d=ds[0]||''}c.rows.forEach(r=>{if(!PRIX_ST[r.st])r.st='recu'})});return a}
 function summary(a){const d=a.deno;const st=STEPS.map(s=>stepState(a,s));const jn=(a.jalons||[]).find(j=>!j.valide&&j.prevu);return {id:a.id,mtf:a.mtf||null,fs:a.fs||null,late:(a.fact||[]).filter(factLate).length,jnext:jn?{t:jn.titre,d:daysTo(jn.prevu)}:null,nom:d.nom,ref:d.ref,etat:d.etat,client:d.client.societe,adresse:d.adresse,lat:d.lat,lng:d.lng,echeance:d.echeance,repondu:!!d.repondu,avalider:!!d.avalider,steps:{done:st.filter(x=>x==='done').length,total:STEPS.length},docs:{ok:a.docs.filter(x=>x.st!=='attendu').length,total:a.docs.length},updated:a.updated}}
@@ -1049,42 +1050,54 @@ async function liveRadar(){
   }catch(e){liveStatus('radar','Radar : '+netMsg(e),true)}
 }
 /* ============ Itinéraires (IGN Géoplateforme, secours OSRM — sans clé) ============ */
-async function routeAB(a,b){
-  try{const j=await jget(`https://data.geopf.fr/navigation/itineraire?resource=bdtopo-osrm&profile=car&optimization=fastest&start=${a[1]},${a[0]}&end=${b[1]},${b[0]}&geometryFormat=geojson&distanceUnit=meter&timeUnit=minute`);
-    if(j&&j.distance!=null&&j.duration!=null){let d=+j.distance,t=+j.duration;const du=(j.distanceUnit||'meter').toLowerCase(),tu=(j.timeUnit||'minute').toLowerCase();if(du.startsWith('k'))d*=1000;if(tu.startsWith('s'))t/=60;else if(tu.startsWith('h'))t*=60;
-      return {dist:d,dur:t,geom:(j.geometry&&j.geometry.coordinates||[]).map(c=>[c[1],c[0]]),src:'IGN'}}throw new Error('réponse IGN vide')}
-  catch(e){const j=await jget(`https://router.project-osrm.org/route/v1/driving/${a[1]},${a[0]};${b[1]},${b[0]}?overview=full&geometries=geojson`);const r=j.routes&&j.routes[0];if(!r)throw new Error('aucun itinéraire trouvé');
-    return {dist:r.distance,dur:r.duration/60,geom:r.geometry.coordinates.map(c=>[c[1],c[0]]),src:'OSRM'}}
+/* Plusieurs itinéraires : IGN le plus rapide + IGN le plus court + variantes OSRM ; doublons écartés */
+const rnd5=g=>g.map(p=>[Math.round(p[0]*1e5)/1e5,Math.round(p[1]*1e5)/1e5]);
+async function ignRoute(a,b,opt){const j=await jget(`https://data.geopf.fr/navigation/itineraire?resource=bdtopo-osrm&profile=car&optimization=${opt}&start=${a[1]},${a[0]}&end=${b[1]},${b[0]}&geometryFormat=geojson&distanceUnit=meter&timeUnit=minute`);
+  if(!j||j.distance==null||j.duration==null)throw new Error('réponse IGN vide');let d=+j.distance,t=+j.duration;const du=(j.distanceUnit||'meter').toLowerCase(),tu=(j.timeUnit||'minute').toLowerCase();if(du.startsWith('k'))d*=1000;if(tu.startsWith('s'))t/=60;else if(tu.startsWith('h'))t*=60;
+  return {dist:d,dur:t,geom:rnd5((j.geometry&&j.geometry.coordinates||[]).map(c=>[c[1],c[0]])),src:'IGN',label:opt==='shortest'?'Le plus court (IGN)':'Le plus rapide (IGN)'}}
+async function osrmRoutes(a,b){const j=await jget(`https://router.project-osrm.org/route/v1/driving/${a[1]},${a[0]};${b[1]},${b[0]}?overview=full&geometries=geojson&alternatives=3`);
+  return (j.routes||[]).map((r,k)=>({dist:r.distance,dur:r.duration/60,geom:rnd5(r.geometry.coordinates.map(c=>[c[1],c[0]])),src:'OSRM',label:k?'Variante '+k+' (OSRM)':'Principal (OSRM)'}))}
+async function routeAlts(a,b){
+  const R=await Promise.allSettled([ignRoute(a,b,'fastest'),ignRoute(a,b,'shortest'),osrmRoutes(a,b)]);
+  let L2=[];R.forEach(r=>{if(r.status==='fulfilled')L2=L2.concat(r.value)});
+  if(!L2.length)throw (R.find(r=>r.status==='rejected')||{}).reason||new Error('aucun itinéraire trouvé');
+  const out=[];for(const r of L2.sort((x,y)=>x.dur-y.dur)){if(!out.some(o=>Math.abs(o.dist-r.dist)<o.dist*.02&&Math.abs(o.dur-r.dur)<Math.max(1,o.dur*.03)))out.push(r)}
+  return out.slice(0,5);
 }
+async function routeAB(a,b){return (await routeAlts(a,b))[0]}
 const fmtKm=m=>(m/1000).toLocaleString('fr-FR',{maximumFractionDigits:1})+' km';
 const fmtMin=t=>{t=Math.round(t);return t<60?t+' min':Math.floor(t/60)+' h '+String(t%60).padStart(2,'0')};
 let RTL=null,RTA=null;
 const routeDot=(ll,c,t)=>L.marker(ll,{interactive:false,icon:L.divIcon({className:'rtdot',iconSize:[22,22],iconAnchor:[11,11],html:`<span style="background:${c}">${t}</span>`})});
 async function routeClick(ll){
   if(!RTA||RTL&&RTL._done){if(RTL)MAP.removeLayer(RTL);RTL=L.layerGroup().addTo(MAP);RTA=[ll.lat,ll.lng];routeDot(ll,'#22c55e','A').addTo(RTL);return}
-  const B=[ll.lat,ll.lng];routeDot(ll,'#ef4444','B').addTo(RTL);RTL._done=true;
-  try{const r=await routeAB(RTA,B);
-    L.polyline(r.geom,{color:'#fb923c',weight:5,opacity:.9,interactive:false}).addTo(RTL);
-    L.popup({className:'qpop',autoClose:false,closeOnClick:false}).setLatLng(B).setContent(`<div class="qp"><b>${ic('route',14)} Itinéraire</b>
-      <div class="qr"><span>Distance</span><b>${fmtKm(r.dist)}</b></div><div class="qr"><span>Trajet VL</span><b>${fmtMin(r.dur)}</b></div><div class="qr"><span>Trajet poids lourd (× 1,25)</span><b>${fmtMin(r.dur*1.25)}</b></div><div class="qr"><span>Aller-retour PL</span><b>${fmtMin(r.dur*2.5)}</b></div>
-      <div class="mute" style="font-size:11px;margin-top:4px">Calcul ${r.src==='IGN'?'IGN Géoplateforme':'OSRM'} — cliquez à nouveau pour un autre itinéraire.</div></div>`).addTo(RTL);
-  }catch(e){toast('Itinéraire impossible : '+netMsg(e),'err')}
-  RTA=null;
+  const B=[ll.lat,ll.lng];routeDot(ll,'#ef4444','B').addTo(RTL);RTL._done=true;const A0=RTA;RTA=null;
+  try{const alts=await routeAlts(A0,B);RTL._alts=alts;RTL._lines=L.layerGroup().addTo(RTL);RTL._pop=L.popup({className:'qpop',autoClose:false,closeOnClick:false,maxWidth:330}).setLatLng(B).addTo(RTL);rtSel(0)}
+  catch(e){toast('Itinéraire impossible : '+netMsg(e),'err')}
 }
+function rtSel(k){if(!RTL||!RTL._alts)return;const alts=RTL._alts,r=alts[k];RTL._lines.clearLayers();
+  alts.forEach((x,i)=>{if(i===k)return;L.polyline(x.geom,{color:'#9ca3af',weight:4,opacity:.75,dashArray:'6 6'}).on('click',ev=>{L.DomEvent.stop(ev);rtSel(i)}).bindTooltip(x.label+' — '+fmtKm(x.dist)+' · '+fmtMin(x.dur)).addTo(RTL._lines)});
+  L.polyline(r.geom,{color:'#fb923c',weight:6,opacity:.95,interactive:false}).addTo(RTL._lines);
+  RTL._pop.setContent(`<div class="qp"><b>${ic('route',14)} Itinéraire</b>
+    <div class="qr"><span>Distance</span><b>${fmtKm(r.dist)}</b></div><div class="qr"><span>Trajet VL</span><b>${fmtMin(r.dur)}</b></div><div class="qr"><span>Trajet poids lourd (× 1,25)</span><b>${fmtMin(r.dur*1.25)}</b></div><div class="qr"><span>Aller-retour PL</span><b>${fmtMin(r.dur*2.5)}</b></div>
+    ${alts.length>1?`<div class="qrt" style="margin-top:6px">${alts.length} itinéraires possibles</div><div class="ralts">${alts.map((x,i)=>`<button class="${i===k?'on':''}" data-rtsel="${i}"><b>${esc(x.label)}</b><span>${fmtKm(x.dist)} · ${fmtMin(x.dur)}</span></button>`).join('')}</div>`:''}
+    <div class="mute" style="font-size:11px;margin-top:4px">Cliquez une variante (ou son tracé gris) pour la choisir · nouveau clic sur la carte = autre itinéraire.</div></div>`)}
+document.addEventListener('click',e=>{const b=e.target.closest('[data-rtsel]');if(b){e.preventDefault();rtSel(+b.dataset.rtsel)}});
 /* ============ Débale : chantier (A) → débale (B), temps de cycle et rotations par jour ============ */
 let DBM=null,DBL=null,DBPICK=null;
 const DBCOL=['#fb923c','#38bdf8','#a78bfa','#f472b6','#facc15'];
 const kpi=(l,v,c='')=>`<div class="kpi"><small>${l}</small><b style="${c?'color:'+c:''}">${v}</b></div>`;
-function dbCalc(d,s){if(s.dur==null)return null;const cyc=2*s.dur*num(d.coef||1)+num(d.load)+num(d.unload);const rot=cyc>0?Math.floor(num(d.day)*60/cyc):0;return {cyc,rot,vol:num(d.capa)?rot*num(d.capa):null}}
+function dbCalc(d,s){if(s.dur==null)return null;const cyc=2*s.dur*num(d.coef||1)+num(d.load)+num(d.unload);const rot=cyc>0?Math.floor(num(d.day)*60/cyc):0;return {cyc,rot,vol:num(d.capa)?rot*num(d.capa):null,ton:num(d.capaT)?rot*num(d.capaT):null}}
 function tabDebale(){
   if(!A.debale)A.debale={load:15,unload:5,coef:1.25,day:8,capa:'',sites:[]};const d=A.debale,a=A.deno;
   let h=`<div class="tabhead"><div><h2>Débale</h2><p class="mute">Le chantier est le point A. Placez une ou plusieurs débales sur la carte : MomoJOB calcule le trajet, le temps de cycle d\u2019un camion et le nombre de rotations par journée.</p></div></div>`;
-  h+=`<div class="card"><div class="cardh"><b>${ic('cog',15)} Hypothèses</b></div><div class="grid g5">
+  h+=`<div class="card"><div class="cardh"><b>${ic('cog',15)} Hypothèses</b></div><div class="grid g6">
     <label class="f"><span>Chargement (min)</span><input class="num" data-b="debale.load" data-rr="debale" value="${esc(d.load)}"></label>
     <label class="f"><span>Déchargement (min)</span><input class="num" data-b="debale.unload" data-rr="debale" value="${esc(d.unload)}"></label>
     <label class="f"><span title="Les temps calculés sont ceux d\u2019un véhicule léger : on les majore pour un poids lourd">Coef. poids lourd</span><input class="num" data-b="debale.coef" data-rr="debale" value="${esc(d.coef)}"></label>
     <label class="f"><span>Journée (h)</span><input class="num" data-b="debale.day" data-rr="debale" value="${esc(d.day)}"></label>
-    <label class="f"><span>Capacité camion (m³, facultatif)</span><input class="num" data-b="debale.capa" data-rr="debale" value="${esc(d.capa)}" placeholder="ex. 12"></label></div></div>`;
+    <label class="f"><span>Capacité camion (m³)</span><input class="num" data-b="debale.capa" data-rr="debale" value="${esc(d.capa)}" placeholder="ex. 12"></label>
+    <label class="f"><span>Capacité camion (t)</span><input class="num" data-b="debale.capaT" data-rr="debale" value="${esc(d.capaT||'')}" placeholder="ex. 19"></label></div></div>`;
   h+=`<div class="card"><div class="cardh"><b>${ic('map',15)} Carte</b><span class="mute" id="db-hint">${a.lat==null?'Le chantier n\u2019a pas de position : renseignez-la dans Dénomination.':'Cliquez « Placer une débale » puis sur la carte (déplacer : clic molette).'}</span><span class="sp"></span><button class="btn sm pri" data-act="dbPick" ${a.lat==null?'disabled':''}>${ic('pin',14)} Placer une débale</button></div><div id="db-mapw"><div id="db-map"></div></div></div>`;
   h+=`<div id="db-sites">${dbSitesHTML()}</div>`;
   return h;
@@ -1093,9 +1106,11 @@ function dbSitesHTML(){const d=A.debale;if(!d.sites.length)return '<p class="mut
   return d.sites.map((s,i)=>{const c=dbCalc(d,s);return `<div class="card dbs" style="border-left:4px solid ${DBCOL[i%DBCOL.length]}"><div class="cardh"><input class="cattitle" data-b="debale.sites.${i}.nom" value="${esc(s.nom||'')}" placeholder="Nom de la débale (ISDI, plateforme…)"><span class="sp"></span><button class="btn sm" data-act="dbMove" data-i="${i}" title="Repositionner sur la carte">${ic('pin',14)} Déplacer</button><button class="btn sm ghost" data-act="dbDel" data-i="${i}" title="Supprimer">${ic('trash',15)}</button></div>
    <div class="mute" style="margin:-4px 0 8px">${esc(s.adresse||'')}</div>
    ${s.err?`<div class="mute" style="color:var(--err)">Itinéraire impossible : ${esc(s.err)} <button class="btn sm" data-act="dbCalc" data-i="${i}">Réessayer</button></div>`:s.dur==null?'<div class="mute">Calcul de l\u2019itinéraire…</div>':`<div class="kpis">
-     ${kpi('Distance',fmtKm(s.dist))}${kpi('Trajet aller (PL)',fmtMin(s.dur*num(d.coef||1)))}${kpi('Temps de cycle',fmtMin(c.cyc))}${kpi('Rotations / jour',`<span id="db-rot-${i}">${c.rot}</span>`,'#fb923c')}${c.vol!=null?kpi('Volume / jour / camion',c.vol.toLocaleString('fr-FR')+' m³','#34d399'):''}</div>
-     <div class="mute" style="font-size:12px;margin-top:6px">Cycle = 2 × ${fmtMin(s.dur)} × ${String(d.coef).replace('.',',')} + ${num(d.load)} min chargement + ${num(d.unload)} min déchargement · itinéraire ${s.src==='IGN'?'IGN Géoplateforme':'OSRM'}</div>`}</div>`}).join('');
+     ${kpi('Distance',fmtKm(s.dist))}${kpi('Trajet aller (PL)',fmtMin(s.dur*num(d.coef||1)))}${kpi('Temps de cycle',fmtMin(c.cyc))}${kpi('Rotations / jour',`<span id="db-rot-${i}">${c.rot}</span>`,'#fb923c')}${c.vol!=null?kpi('Volume / jour / camion',c.vol.toLocaleString('fr-FR')+' m³','#34d399'):''}${c.ton!=null?kpi('Tonnage / jour / camion',c.ton.toLocaleString('fr-FR')+' t','#34d399'):''}</div>
+     ${(s.alts||[]).length>1?`<div class="ralts row" style="margin-top:8px">${s.alts.map((x,k)=>`<button class="${(s.sel||0)===k?'on':''}" data-act="dbAlt" data-i="${i}" data-k="${k}"><b>${esc(x.label)}</b><span>${fmtKm(x.dist)} · ${fmtMin(x.dur*num(d.coef||1))} PL</span></button>`).join('')}</div>`:''}
+     <div class="mute" style="font-size:12px;margin-top:6px">Cycle = 2 × ${fmtMin(s.dur)} × ${String(d.coef).replace('.',',')} + ${num(d.load)} min chargement + ${num(d.unload)} min déchargement · ${esc((s.alts&&s.alts[s.sel||0]||{}).label||'itinéraire')}</div>`}</div>`}).join('');
 }
+function dbPickAlt(s,k,quiet){const r=s.alts&&s.alts[k];if(!r)return;Object.assign(s,{sel:k,dist:r.dist,dur:r.dur,src:r.src,err:null});s._geom=r.geom;if(!quiet){touch();updDebale();dbDraw(false)}}
 function updDebale(){const e=$('#db-sites');if(e)e.innerHTML=dbSitesHTML()}
 function mountDebale(){
   if(DBM){DBM.remove();DBM=null}const el=$('#db-map');if(!el||typeof L==='undefined')return;
@@ -1106,13 +1121,15 @@ function mountDebale(){
   DBL=L.layerGroup().addTo(DBM);
   DBM.on('click',e=>{if(DBPICK==null)return;const i=DBPICK;DBPICK=null;$('#db-map').classList.remove('pick');dbSet(i,e.latlng.lat,e.latlng.lng)});
   dbDraw(true);
-  A.debale.sites.forEach((s,i)=>{if(s.dur==null&&!s.err&&A.deno.lat!=null)dbRoute(i)});
+  A.debale.sites.forEach((s,i)=>{if((s.dur==null||!s.alts)&&!s.err&&A.deno.lat!=null)dbRoute(i)});
   setTimeout(()=>DBM&&DBM.invalidateSize(),60);
 }
 function dbDraw(fit){
   if(!DBM)return;DBL.clearLayers();const a=A.deno,B=[];
   if(a.lat!=null){routeDot([a.lat,a.lng],'#22c55e','A').addTo(DBL);B.push([a.lat,a.lng])}
-  A.debale.sites.forEach((s,i)=>{const c=DBCOL[i%DBCOL.length];if(s._geom)L.polyline(s._geom,{color:c,weight:5,opacity:.85,interactive:false}).addTo(DBL);
+  A.debale.sites.forEach((s,i)=>{const c=DBCOL[i%DBCOL.length];
+    (s.alts||[]).forEach((x,k)=>{if(k===(s.sel||0))return;L.polyline(x.geom,{color:'#9ca3af',weight:3.5,opacity:.7,dashArray:'6 6'}).bindTooltip(esc(x.label)+' — '+fmtKm(x.dist)+' · cliquez pour la choisir').on('click',ev=>{L.DomEvent.stop(ev);dbPickAlt(s,k)}).addTo(DBL)});
+    if(s._geom)L.polyline(s._geom,{color:c,weight:5.5,opacity:.9,interactive:false}).addTo(DBL);
     const m=L.marker([s.lat,s.lng],{draggable:true,icon:L.divIcon({className:'rtdot',iconSize:[22,22],iconAnchor:[11,11],html:`<span style="background:${c}">${i+1}</span>`})}).addTo(DBL);
     m.bindTooltip(esc(s.nom||'Débale '+(i+1)));m.on('dragend',e=>{const p=e.target.getLatLng();dbSet(i,p.lat,p.lng)});B.push([s.lat,s.lng]);(s._geom||[]).forEach(p=>B.push(p))});
   if(fit){if(B.length>1)DBM.fitBounds(B,{padding:[30,30],maxZoom:16});else if(B.length)DBM.setView(B[0],13);else DBM.setView(MAP?MAP.getCenter():[44.559,6.079],10)}
@@ -1124,7 +1141,7 @@ async function dbSet(i,lat,lng){
   dbRoute(i);
 }
 async function dbRoute(i){const s=A.debale.sites[i],a=A.deno,aff=A;if(!s||a.lat==null)return;
-  try{const r=await routeAB([a.lat,a.lng],[s.lat,s.lng]);Object.assign(s,{dist:Math.round(r.dist),dur:Math.round(r.dur*10)/10,src:r.src,err:null});s._geom=r.geom}
+  try{const alts=await routeAlts([a.lat,a.lng],[s.lat,s.lng]);s.alts=alts.map(r=>({dist:Math.round(r.dist),dur:Math.round(r.dur*10)/10,src:r.src,label:r.label,geom:r.geom}));dbPickAlt(s,0,true)}
   catch(e){s.err=netMsg(e)}
   if(A!==aff)return;touch();updDebale();dbDraw(true);
 }
@@ -1849,6 +1866,7 @@ const ACTS={
   dbPick:()=>{DBPICK=-1;$('#db-map').classList.add('pick');toast('Cliquez sur la carte à l\u2019emplacement de la débale')},
   dbMove:b=>{DBPICK=+b.dataset.i;$('#db-map').classList.add('pick');toast('Cliquez sur la carte au nouvel emplacement (ou faites glisser le repère)')},
   dbDel:async b=>{const i=+b.dataset.i;if(!await appConfirm('Supprimer cette débale ?','Supprimer'))return;A.debale.sites.splice(i,1);touch();updDebale();dbDraw(false)},
+  dbAlt:b=>dbPickAlt(A.debale.sites[+b.dataset.i],+b.dataset.k),
   dbCalc:b=>{const s=A.debale.sites[+b.dataset.i];s.err=null;updDebale();dbRoute(+b.dataset.i)},
   metreDel:b=>{A.metre.rows.splice(+b.dataset.i,1);touch();renderPostes();renderRNav()},
   mapImport:async()=>{const [f]=await pickFile('.map,.json');if(!f)return;const text=await readText(f);let d;try{d=JSON.parse(text)}catch(e){return toast('Fichier .map illisible','err')}
@@ -2119,7 +2137,7 @@ function synthHTML(a){
   `<h2>Avancement des étapes</h2><table><tr>${STEPS.map(st=>`<th>${st.l}</th>`).join('')}</tr><tr>${STEPS.map(st=>`<td>${{done:'Terminée',prog:'En cours',todo:'À faire'}[stepState(a,st)]}</td>`).join('')}</tr></table>`+
   `<h2>Étude préliminaire</h2><table>${a.prelim.items.map(i=>`<tr><th style="width:32%">${esc(i.l)}</th><td style="width:12%">${{oui:'Oui',non:'Non',nc:'À déterminer'}[i.v]||'—'}</td><td style="white-space:pre-wrap">${esc(i.txt||'')}${(i.files||[]).length?`<div style="color:#555;margin-top:3px">Rapport(s) joint(s) : ${i.files.map(x=>esc(x.nom||x.file.name)).join(', ')}</div>`:''}</td></tr>`).join('')}</table>`+
   `<h2>Consultation des prix</h2>${a.prix.cats.filter(c=>c.rows.length).map(c=>`<b>${esc(c.l)}</b>${c.d?` <span style="color:#666">— consultation du ${fmtD(c.d)}</span>`:''}<table><tr><th>Intitulé</th><th>Produit</th><th>U</th><th>Qté</th><th>PU HT</th><th>Total HT</th><th>Statut</th></tr>${c.rows.map(r=>`<tr><td>${esc(r.f)}</td><td>${esc(r.p)}</td><td>${esc(r.u)}</td><td>${esc(r.q)}</td><td>${r.pu?eur(num(r.pu)):''}</td><td>${num(r.q)*num(r.pu)?eur(num(r.q)*num(r.pu)):''}</td><td>${PRIX_ST[r.st]||''}</td></tr>`).join('')}</table>`).join('')||'<p>Aucune consultation.</p>'}`+
-  ((a.debale&&a.debale.sites.length)?`<h2>Débale</h2><p style="color:#555">Chargement ${num(a.debale.load)} min · déchargement ${num(a.debale.unload)} min · coef. poids lourd ${String(a.debale.coef).replace('.',',')} · journée ${num(a.debale.day)} h${num(a.debale.capa)?' · camion '+num(a.debale.capa)+' m³':''}</p><table><tr><th>Débale</th><th>Distance</th><th>Trajet PL</th><th>Cycle</th><th>Rotations / jour</th>${num(a.debale.capa)?'<th>Volume / jour / camion</th>':''}</tr>${a.debale.sites.map(x=>{const c=dbCalc(a.debale,x);return `<tr><td>${esc(x.nom||'')}<br><small style="color:#666">${esc(x.adresse||'')}</small></td><td>${x.dist!=null?fmtKm(x.dist):''}</td><td>${x.dur!=null?fmtMin(x.dur*num(a.debale.coef||1)):''}</td><td>${c?fmtMin(c.cyc):''}</td><td>${c?c.rot:''}</td>${num(a.debale.capa)?`<td>${c&&c.vol!=null?c.vol+' m³':''}</td>`:''}</tr>`}).join('')}</table>`:'')+
+  ((a.debale&&a.debale.sites.length)?`<h2>Débale</h2><p style="color:#555">Chargement ${num(a.debale.load)} min · déchargement ${num(a.debale.unload)} min · coef. poids lourd ${String(a.debale.coef).replace('.',',')} · journée ${num(a.debale.day)} h${(num(a.debale.capa)||num(a.debale.capaT))?' · camion '+[num(a.debale.capa)?num(a.debale.capa)+' m³':'',num(a.debale.capaT)?num(a.debale.capaT)+' t':''].filter(Boolean).join(' / '):''}</p><table><tr><th>Débale</th><th>Distance</th><th>Trajet PL</th><th>Cycle</th><th>Rotations / jour</th>${num(a.debale.capa)?'<th>Volume / jour / camion</th>':''}${num(a.debale.capaT)?'<th>Tonnage / jour / camion</th>':''}</tr>${a.debale.sites.map(x=>{const c=dbCalc(a.debale,x);return `<tr><td>${esc(x.nom||'')}<br><small style="color:#666">${esc(x.adresse||'')}</small></td><td>${x.dist!=null?fmtKm(x.dist):''}</td><td>${x.dur!=null?fmtMin(x.dur*num(a.debale.coef||1)):''}</td><td>${c?fmtMin(c.cyc):''}</td><td>${c?c.rot:''}</td>${num(a.debale.capa)?`<td>${c&&c.vol!=null?c.vol+' m³':''}</td>`:''}${num(a.debale.capaT)?`<td>${c&&c.ton!=null?c.ton+' t':''}</td>`:''}</tr>`}).join('')}</table>`:'')+
   `<h2>Métré${a.metre.map?' — Mapulator : '+esc(a.metre.map.name):''}</h2>${a.metre.rows.length?`<table><tr><th>Désignation</th><th>U</th><th>Quantité</th><th>PU HT</th><th>Total HT</th></tr>${a.metre.rows.map(r=>`<tr><td>${esc(r.des)}${r.alt?` <small style="color:#666">(soit ${qfmt(num(r.uSel==='alt'?r.q:r.alt.q))} ${esc(r.uSel==='alt'?r.u:r.alt.u)})</small>`:''}</td><td>${esc(rU(r))}</td><td>${qfmt(num(rQ(r)))}</td><td>${r.pu?eur(num(r.pu)):''}</td><td>${num(rQ(r))*num(r.pu)?eur(num(rQ(r))*num(r.pu)):''}</td></tr>`).join('')}<tr><th colspan="4">Total HT</th><th>${eur(metreTotal(a))}</th></tr></table>`:'<p>Aucun poste.</p>'}`+
   (()=>{const T=factTotals(a);return false?`<h2>Devis &amp; facturation</h2><table><tr><th>Devis acceptés HT</th><th>Facturé HT</th><th>Reste à facturer HT</th><th>Encaissé TTC</th><th>En attente TTC</th></tr><tr><td>${eur(T.acc)}</td><td>${eur(T.fac)}</td><td>${eur(T.reste)}</td><td>${eur(T.paye)}</td><td>${eur(T.du)}</td></tr></table>`:''})()+
   `<h2>Documents liés</h2>${a.docs.length?`<table><tr><th>Catégorie</th><th>Désignation</th><th>Statut</th><th>Attendu pour</th><th>Reçu le</th><th>Note</th></tr>${a.docs.map(x=>`<tr><td>${DOC_CAT[x.cat]||''}</td><td>${esc(x.nom)}${x.file?' (fichier joint)':''}</td><td>${DOC_ST[x.st][0]}</td><td>${fmtD(x.pour)}</td><td>${fmtD(x.recu)}</td><td>${esc(x.note)}</td></tr>`).join('')}</table>`:'<p>Aucun document suivi.</p>'}`+
