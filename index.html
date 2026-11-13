@@ -1493,7 +1493,9 @@ function updPin(){const s=summary(A),st=pinStyle(s);const p=$('#rpin');if(p){p.s
 function renderRNav(){
   $('#rnav').innerHTML=RTABS.map(([k,icn,l])=>{const s=STEPS.find(x=>x.k===k);const st=s?stepState(A,s):'';return `<button class="rn ${RTAB===k?'on':''}" data-act="tab" data-t="${k}" title="${esc(l)}">${ic(icn,17)}<span class="t">${l}</span>${s?`<span class="sd ${st}"></span>`:''}</button>`}).join('')+`<div class="rn-sep"></div><button class="rn rn-dl" data-act="dlOpen" title="Télécharger le dossier de réponse client ou le dossier complet (ZIP)">${ic('download',17)}<span class="t">Télécharger</span></button>`;
 }
-function renderRTab(){$('#rcontent').classList.toggle('full',RTAB==='metre');const f={rapport:tabRapport,deno:tabDeno,prelim:tabPrelim,prix:tabPrix,metre:tabMetre,debale:tabDebale,fact:tabFact,docs:tabDocs,chrono:tabChrono,admin:tabAdmin,jalons:jalonsHTMLtab}[RTAB];$('#rcontent').innerHTML=f();$('#rcontent').scrollTop=0;
+/* Après un ajout : amène le nouvel élément à l'écran (sans remonter en haut) et place le curseur dedans */
+function focusNew(sel){const e=$('#rcontent').querySelector(sel);if(!e)return;e.scrollIntoView({block:'nearest',behavior:'smooth'});e.focus({preventScroll:true});if(e.select)e.select()}
+function renderRTab(){$('#rcontent').classList.toggle('full',RTAB==='metre');const f={rapport:tabRapport,deno:tabDeno,prelim:tabPrelim,prix:tabPrix,metre:tabMetre,debale:tabDebale,fact:tabFact,docs:tabDocs,chrono:tabChrono,admin:tabAdmin,jalons:jalonsHTMLtab}[RTAB];const rc=$('#rcontent'),same=renderRTab.last===RTAB+'|'+(A&&A.id),st=rc.scrollTop;rc.innerHTML=f();rc.scrollTop=same?st:0;renderRTab.last=RTAB+'|'+(A&&A.id);
   if(RTAB==='rapport')loadMeteo(A);if(RTAB==='prix')updPrix();if(RTAB==='metre')mountMapu();if(RTAB==='debale')mountDebale();if(RTAB==='admin')updCalc()}
 const stepBar=(k,t,desc)=>{const done=!!A.steps[k];return `<div class="tabhead"><div><h2>${t}</h2>${desc?`<p class="mute">${desc}</p>`:''}</div><button class="stepbtn ${done?'done':''}" data-act="stepDone" data-k="${k}">${done?ic('check',15)+' Étape terminée':ic('circle',15)+' Marquer l\u2019étape terminée'}</button></div>`};
 const fi=(p,label,o={})=>{const v=getPath(A,p)??'';const ex=`${o.list?`list="${o.list}"`:''} ${o.rr?`data-rr="${o.rr}"`:''} ${o.ac?`data-ac="${o.ac}"`:''} placeholder="${esc(o.ph||'')}"`;
@@ -1814,7 +1816,7 @@ function dcHTML(a,kind,i){
 
 /* ============ Actions du rapport ============ */
 const ACTS={
-  jAdd:()=>{A.jalons.push({id:uid('J-'),titre:'',prevu:'',valide:'',note:'',pieces:[]});touch();renderRTab()},
+  jAdd:()=>{A.jalons.push({id:uid('J-'),titre:'',prevu:'',valide:'',note:'',pieces:[]});touch();renderRTab();focusNew(`[data-b="jalons.${A.jalons.length-1}.titre"]`)},
   jDel:async b=>{const j=A.jalons[+b.dataset.i];if((j.pieces.some(p=>p.file)||j.titre)&&!await appConfirm(`Supprimer le jalon « ${esc(j.titre||'sans titre')} »${j.pieces.some(p=>p.file)?' et ses pièces jointes':''} ?`,'Supprimer'))return;A.jalons.splice(+b.dataset.i,1);touch();renderRTab();renderRNav()},
   jUp:b=>{const i=+b.dataset.i;if(i<1)return;const J=A.jalons;[J[i-1],J[i]]=[J[i],J[i-1]];touch();renderRTab()},
   jDown:b=>{const i=+b.dataset.i,J=A.jalons;if(i>=J.length-1)return;[J[i+1],J[i]]=[J[i],J[i+1]];touch();renderRTab()},
@@ -1849,7 +1851,7 @@ const ACTS={
   ctAdd:()=>{A.deno.contacts.push({nom:'',role:'',tel:'',mail:''});touch();renderRTab()},
   ctDel:b=>{A.deno.contacts.splice(+b.dataset.i,1);touch();renderRTab()},
   prelSet:b=>{const it=A.prelim.items[+b.dataset.i];it.v=it.v===b.dataset.v?'':b.dataset.v;touch();renderRTab();renderRNav()},
-  prelAdd:()=>{A.prelim.items.push({l:'Autre étude',v:'',txt:'',files:[],custom:true});touch();renderRTab()},
+  prelAdd:()=>{A.prelim.items.push({l:'Autre étude',v:'',txt:'',files:[],custom:true});touch();renderRTab();focusNew(`[data-b="prelim.items.${A.prelim.items.length-1}.l"]`)},
   prelDel:async b=>{const it=A.prelim.items[+b.dataset.i];if(((it.files||[]).length||it.txt)&&!await appConfirm(`Supprimer l\u2019étude « ${esc(it.l)} »${(it.files||[]).length?' et ses '+it.files.length+' rapport(s)':''} ?`,'Supprimer'))return;A.prelim.items.splice(+b.dataset.i,1);touch();renderRTab();renderRNav()},
   prelAttach:async b=>{const fs=await pickFile('*/*',true);if(fs&&fs.length)prelAttachFiles(+b.dataset.i,[...fs])},
   dashDoc:b=>openData(A.docs[+b.dataset.i].file,false),
@@ -1857,9 +1859,9 @@ const ACTS={
   prelView:b=>openData(A.prelim.items[+b.dataset.i].files[+b.dataset.k].file,false),
   prelDl:b=>openData(A.prelim.items[+b.dataset.i].files[+b.dataset.k].file,true),
   prelFDel:async b=>{if(!await appConfirm('Retirer ce rapport de l\u2019étude ?','Retirer'))return;A.prelim.items[+b.dataset.i].files.splice(+b.dataset.k,1);touch();renderRTab();renderRNav()},
-  prixAdd:b=>{A.prix.cats[+b.dataset.c].rows.push({f:'',p:'',u:'',q:'',pu:'',st:'recu'});touch();renderRTab();renderRNav()},
+  prixAdd:b=>{const c=+b.dataset.c;A.prix.cats[c].rows.push({f:'',p:'',u:'',q:'',pu:'',st:'recu'});touch();renderRTab();renderRNav();focusNew(`[data-b="prix.cats.${c}.rows.${A.prix.cats[c].rows.length-1}.f"]`)},
   prixDel:b=>{A.prix.cats[+b.dataset.c].rows.splice(+b.dataset.r,1);touch();renderRTab();renderRNav()},
-  prixAddCat:()=>{A.prix.cats.push({l:'Nouvelle catégorie',d:todayISO(),rows:[]});touch();renderRTab()},
+  prixAddCat:()=>{A.prix.cats.push({l:'Nouvelle catégorie',d:todayISO(),rows:[]});touch();renderRTab();focusNew(`[data-b="prix.cats.${A.prix.cats.length-1}.l"]`)},
   prixDelCat:async b=>{const c=A.prix.cats[+b.dataset.c];if(c.rows.length&&!await appConfirm(`Supprimer la catégorie « ${esc(c.l)} » et ses ${c.rows.length} ligne(s) ?`,'Supprimer'))return;A.prix.cats.splice(+b.dataset.c,1);touch();renderRTab()},
   metreAdd:()=>{A.metre.rows.push({des:'',u:'',q:'',pu:'',src:'man'});touch();renderPostes();renderRNav()},
   metreU:b=>{const r=A.metre.rows[+b.dataset.i];r.uSel=b.dataset.u||undefined;if(!r.uSel)delete r.uSel;touch();renderPostes()},
